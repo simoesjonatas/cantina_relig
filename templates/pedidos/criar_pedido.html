@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Novo Pedido{% endblock %}
+
+{% block content %}
+<h1>Novo Pedido</h1>
+
+<form method="post" id="pedidoForm" class="card">
+  {% csrf_token %}
+
+  <section class="grid2">
+    <div class="form-group">
+      <label for="{{ form.nome_cliente.id_for_label }}">Nome do cliente</label>
+      {{ form.nome_cliente }}
+    </div>
+  </section>
+
+  <hr>
+
+  <h2 class="mb8">Itens</h2>
+
+  {{ formset.management_form }}
+
+  <div id="itensContainer" class="vstack gap8">
+    {% for f in formset %}
+      <div class="item-row card row">
+        <div class="grid3">
+          <div class="form-group">
+            <label>Produto</label>
+            {{ f.produto }}
+          </div>
+          <div class="form-group">
+            <label>Quantidade</label>
+            {{ f.quantidade }}
+          </div>
+          {% comment %} <div class="form-group">
+            <label>Preço unitário</label>
+            {{ f.preco_unitario }}
+          </div> {% endcomment %}
+        </div>
+
+        <div class="row end">
+          {% comment %} {% if f.DELETE %}
+            <label class="delete-check">
+              {{ f.DELETE }} Remover este item
+            </label>
+          {% endif %} {% endcomment %}
+          <button type="button" class="btn ghost btn-remove">Remover</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- template oculto para novos itens -->
+  <template id="empty-form-template">
+    <div class="item-row card row">
+      <div class="grid3">
+        <div class="form-group">
+          <label>Produto</label>
+          {{ formset.empty_form.produto }}
+        </div>
+        <div class="form-group">
+          <label>Quantidade</label>
+          {{ formset.empty_form.quantidade }}
+        </div>
+        {% comment %} <div class="form-group">
+          <label>Preço unitário</label>
+          {{ formset.empty_form.preco_unitario }}
+        </div> {% endcomment %}
+      </div>
+
+      <div class="row end">
+        {% comment %} {% if formset.empty_form.DELETE %}
+          <label class="delete-check">
+            {{ formset.empty_form.DELETE }} Remover este item
+          </label>
+        {% endif %} {% endcomment %}
+        <button type="button" class="btn ghost btn-remove">Remover</button>
+      </div>
+    </div>
+  </template>
+
+  <div class="row gap8">
+    <button type="button" class="btn" id="btnAdd">+ Adicionar item</button>
+    <button type="submit" class="btn primary">Salvar Rascunho</button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const container = document.getElementById('itensContainer');
+    const addBtn = document.getElementById('btnAdd');
+    const tmpl = document.getElementById('empty-form-template').content;
+    const totalFormsInput = document.getElementById('{{ formset.management_form.TOTAL_FORMS.id_for_label }}');
+
+    // Substitui __prefix__ pelos índices corretos
+    function replacePrefix(el, index) {
+      const find = /__prefix__/g;
+      el.querySelectorAll('input, select, textarea, label').forEach(node => {
+        if (node.name) node.name = node.name.replace(find, index);
+        if (node.id) node.id = node.id.replace(find, index);
+        if (node.htmlFor) node.htmlFor = node.htmlFor.replace(find, index);
+      });
+    }
+
+    function addForm() {
+      const index = parseInt(totalFormsInput.value, 10);
+      const clone = document.importNode(tmpl, true);
+      replacePrefix(clone, index);
+      container.appendChild(clone);
+      totalFormsInput.value = index + 1;
+    }
+
+    function markDeleteOrRemove(row) {
+      // Se houver checkbox DELETE, marca e esconde; senão remove de vez
+      const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (del) {
+        del.checked = true;
+        row.style.opacity = 0.5;
+        row.style.filter = 'grayscale(1)';
+        row.style.pointerEvents = 'none';
+      } else {
+        row.remove();
+        // Opcional: reindexar (não é obrigatório se não houver DELETE)
+      }
+    }
+
+    container.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn-remove')) {
+        const row = e.target.closest('.item-row');
+        markDeleteOrRemove(row);
+      }
+    });
+
+    addBtn.addEventListener('click', addForm);
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cozinha{% endblock %}
+
+{% block content %}
+<h1>Cozinha — Comandas</h1>
+
+<div class="card row" style="justify-content:space-between; margin-bottom:14px;">
+  <div class="row gap8">
+    <button class="btn" id="btnRefresh">Atualizar agora</button>
+    <button class="btn ghost" onclick="window.print()">Imprimir</button>
+  </div>
+  <label class="row" style="gap:8px; align-items:center;">
+    <input type="checkbox" id="autoRefresh" />
+    Auto-atualizar a cada 10s
+  </label>
+</div>
+
+{% if comandas %}
+  <div class="k-grid">
+    {% for comanda in comandas %}
+      <article class="k-card card" data-created="{{ comanda.pedido.criado_em|date:'c' }}">
+        <header class="row" style="justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="k-numero">#{{ comanda.pedido.numero }}</div>
+            <div class="k-cliente"><strong>Cliente:</strong> {{ comanda.pedido.nome_cliente }}</div>
+          </div>
+          <div class="k-meta">
+            <div><strong>Aberto:</strong> {{ comanda.pedido.criado_em|date:"H:i" }}</div>
+            <div><strong>Há:</strong> <span class="k-elapsed">—</span></div>
+            <div><strong>Total:</strong> R$ {{ comanda.pedido.total|floatformat:2 }}</div>
+          </div>
+        </header>
+
+        <hr>
+
+        <ul class="k-itens">
+          {% for item in comanda.pedido.itens.all %}
+            <li>
+              <span class="k-qtd">{{ item.quantidade }}×</span>
+              <span class="k-prod">{{ item.produto.nome }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <form method="post" action="{% url 'pedidos:concluir' comanda.pedido.pk %}" class="row end" style="margin-top:10px;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="pedidos:cozinha">
+          <button type="submit" class="btn primary">Concluir pedido</button>
+        </form>
+
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align:center; color:var(--muted);">
+    Sem pedidos na fila.
+  </div>
+{% endif %}
+
+<script>
+  // --- relógio "Há: Xmin" ---
+  function humanize(ms) {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+    if (h > 0) return `${h}h ${m % 60}min`;
+    if (m > 0) return `${m}min`;
+    return `${s}s`;
+  }
+  function tickElapsed() {
+    document.querySelectorAll('.k-card').forEach(card => {
+      const created = new Date(card.dataset.created);
+      const span = card.querySelector('.k-elapsed');
+      if (span) span.textContent = humanize(Date.now() - created.getTime());
+    });
+  }
+  tickElapsed();
+  setInterval(tickElapsed, 1000);
+
+  // --- Auto-refresh com persistência ---
+  const STORAGE_KEY = 'kitchenAutoRefresh';
+  const chk = document.getElementById('autoRefresh');
+  const btn = document.getElementById('btnRefresh');
+  let timer = null;
+
+  function startAuto() {
+    if (timer) return;               // evita múltiplos timers
+    timer = setInterval(() => {
+      // pausa se a aba não estiver visível (economiza recursos)
+      if (document.visibilityState === 'visible') {
+        location.reload();
+      }
+    }, 10000);
+  }
+  function stopAuto() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+
+  // restaura a preferência salva e inicia se necessário
+  if (chk) {
+    const saved = localStorage.getItem(STORAGE_KEY) === '1';
+    chk.checked = saved;
+    if (saved) startAuto();
+
+    chk.addEventListener('change', () => {
+      if (chk.checked) {
+        localStorage.setItem(STORAGE_KEY, '1');
+        startAuto();
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        stopAuto();
+      }
+    });
+  }
+
+  // botão "Atualizar agora"
+  if (btn) {
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      location.reload();
+    });
+  }
+
+  // se a aba ficar oculta, pausa; se voltar e estiver habilitado, retoma
+  document.addEventListener('visibilitychange', () => {
+    const wantAuto = localStorage.getItem(STORAGE_KEY) === '1';
+    if (document.visibilityState === 'hidden') {
+      stopAuto();
+    } else if (wantAuto) {
+      startAuto();
+      if (chk) chk.checked = true; // garante UI consistente ao voltar
+    }
+  });
+</script>
+
+{% endblock %}

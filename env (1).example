@@ -1,0 +1,6 @@
+# Django basic envs
+DJANGO_SECRET_KEY=dev-change-me
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=*
+# If you use dj-database-url in settings, DATABASE_URL can be omitted for sqlite.
+# Default Django uses BASE_DIR / 'db.sqlite3'

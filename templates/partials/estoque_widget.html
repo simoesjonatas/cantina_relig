@@ -1,0 +1,40 @@
+{% comment %}
+Widget simples de estoque para incluir no base.html
+Variáveis disponíveis (via context processor):
+- estoque_total_disponivel
+- estoque_produtos: [{id, nome, estoque}, ...]
+- estoque_baixo: subset com estoque <= 5
+{% endcomment %}
+
+<div class="estoque-widget card">
+  <div class="row" style="justify-content:space-between; align-items:center;">
+    <strong>Estoque disponível</strong>
+    <span class="badge">{{ estoque_total_disponivel }}</span>
+  </div>
+
+  {% if estoque_baixo %}
+    <div class="alert-low">
+      <small><strong>Atenção:</strong> baixo estoque</small>
+      <ul class="low-list">
+        {% for p in estoque_baixo|slice:":5" %}
+          <li>{{ p.nome }} <span class="chip">{{ p.estoque }}</span></li>
+        {% endfor %}
+        {% if estoque_baixo|length > 5 %}
+          <li>…</li>
+        {% endif %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <details>
+    <summary>Ver todos os produtos</summary>
+    <ul class="prod-list">
+      {% for p in estoque_produtos %}
+        <li>
+          <span class="p-name">{{ p.nome }}</span>
+          <span class="chip {{ p.estoque|yesno:'ok,zero' }}">{% if p.estoque %}{{ p.estoque }}{% else %}0{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+</div>

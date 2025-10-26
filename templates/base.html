@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}RELIG{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container wrap">
+      <a class="brand" href="/">RELIG</a>
+      <nav class="nav">
+        <a href="{% url 'pedidos:criar' %}">Novo Pedido</a>
+        <a href="{% url 'pedidos:cozinha' %}">Cozinha</a>
+        <a href="/admin/">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if messages %}
+      <div class="flash">
+        {% for m in messages %}
+          <div class="flash-item {{ m.tags }}">{{ m }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <small>© {{ now|date:"Y" }} RELIG — simplicidade e sabor</small>
+    </div>
+  </footer>
+</body>
+</html>
