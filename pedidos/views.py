@@ -121,7 +121,9 @@ def confirmar_enviar(request, pk):
         messages.success(request, "Pedido confirmado e enviado à cozinha!")
     except ValidationError as e:
         messages.error(request, str(e))
-    return redirect("pedidos:detalhe", pk=pk)
+        return redirect("pedidos:detalhe", pk=pk)  
+    return redirect("home")
+    # return redirect("pedidos:detalhe", pk=pk)
 
 def cozinha_painel(request):
     # mostra apenas pedidos enviados e não concluídos/cancelados
