@@ -4,7 +4,27 @@
 
 {% block content %}
 <h1>Novo Pedido</h1>
-
+<style>
+  .qty-control {
+    display: inline-flex; align-items: stretch; gap: 6px;
+  }
+  .qty-btn {
+    border: 1px solid var(--border, #d0d7de);
+    background: var(--bg, #f7f7f7);
+    padding: .45rem .7rem; border-radius: .6rem; font-size: 1.1rem;
+    line-height: 1; user-select: none;
+  }
+  .qty-input {
+    width: 80px; text-align: center; font-size: 1rem;
+    padding: .45rem .5rem; border: 1px solid var(--border, #d0d7de);
+    border-radius: .6rem;
+  }
+  /* aumenta área de toque no mobile */
+  @media (pointer: coarse) {
+    .qty-btn { padding: .6rem .9rem; font-size: 1.2rem; }
+    .qty-input { width: 90px; }
+  }
+</style>
 <form method="post" id="pedidoForm" class="card">
   {% csrf_token %}
 
@@ -88,12 +108,96 @@
 
 <script>
   (function () {
+    // ————— Utilitários —————
+    const MIN_QTY = 1;
+    const STEP = 1;
+    const HOLD_DELAY = 400;   // ms até começar repetição
+    const HOLD_SPEED = 70;    // ms entre repetições
+
+    function clamp(v) { v = parseInt(v || MIN_QTY, 10); return isNaN(v) ? MIN_QTY : Math.max(MIN_QTY, v); }
+    function isQtyInput(el) { return el.tagName === 'INPUT' && /\-quantidade$/.test(el.name); }
+
+    // Cria o controle +/− ao redor do input original, preservando name/id para o formset
+    function enhanceQtyInput(input) {
+      if (input.dataset.enhanced === '1') return;
+
+      // Atributos que ajudam no mobile
+      input.setAttribute('inputmode', 'numeric');
+      input.setAttribute('pattern', '[0-9]*');
+      input.setAttribute('step', STEP);
+      input.setAttribute('min', MIN_QTY);
+      input.classList.add('qty-input');
+
+      // valor inicial = 1 se vazio/0
+      if (!input.value || parseInt(input.value, 10) < MIN_QTY) input.value = String(MIN_QTY);
+
+      // Cria botões
+      const wrap = document.createElement('div');
+      wrap.className = 'qty-control';
+      const btnMinus = document.createElement('button');
+      btnMinus.type = 'button';
+      btnMinus.className = 'qty-btn';
+      btnMinus.textContent = '−';
+
+      const btnPlus = document.createElement('button');
+      btnPlus.type = 'button';
+      btnPlus.className = 'qty-btn';
+      btnPlus.textContent = '+';
+
+      // Coloca: [-] [input] [+]
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(btnMinus);
+      wrap.appendChild(input);
+      wrap.appendChild(btnPlus);
+
+      // Eventos: clique
+      btnMinus.addEventListener('click', () => {
+        input.value = clamp(input.value) - STEP;
+        input.value = clamp(input.value);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      btnPlus.addEventListener('click', () => {
+        input.value = clamp(input.value) + STEP;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      // Press-and-hold
+      function hold(btn, fn) {
+        let t1 = null, t2 = null;
+        const start = () => {
+          fn();
+          t1 = setTimeout(() => { t2 = setInterval(fn, HOLD_SPEED); }, HOLD_DELAY);
+        };
+        const stop = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+        btn.addEventListener('mousedown', start);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); start(); }, { passive: false });
+        ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev => btn.addEventListener(ev, stop));
+      }
+      hold(btnMinus, () => btnMinus.click());
+      hold(btnPlus, () => btnPlus.click());
+
+      // Sanitização: só números, sem e/+/-. e sem scroll mudar valor.
+      input.addEventListener('keydown', (e) => {
+        const bad = ['e','E','+','-','.','/','*',','];
+        if (bad.includes(e.key)) e.preventDefault();
+      });
+      input.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
+      input.addEventListener('change', () => { input.value = clamp(input.value); });
+
+      input.dataset.enhanced = '1';
+    }
+
+    // Inicializa todos os existentes
+    function enhanceAllQuantidades(ctx=document) {
+      ctx.querySelectorAll('input[name$="-quantidade"]').forEach(enhanceQtyInput);
+    }
+
+    // Hooka no seu fluxo de "Adicionar item"
     const container = document.getElementById('itensContainer');
     const addBtn = document.getElementById('btnAdd');
-    const tmpl = document.getElementById('empty-form-template').content;
+    const tmpl = document.getElementById('empty-form-template')?.content;
     const totalFormsInput = document.getElementById('{{ formset.management_form.TOTAL_FORMS.id_for_label }}');
 
-    // Substitui __prefix__ pelos índices corretos
     function replacePrefix(el, index) {
       const find = /__prefix__/g;
       el.querySelectorAll('input, select, textarea, label').forEach(node => {
@@ -109,30 +213,28 @@
       replacePrefix(clone, index);
       container.appendChild(clone);
       totalFormsInput.value = index + 1;
+
+      // melhora os campos da linha recém adicionada
+      enhanceAllQuantidades(container.lastElementChild);
     }
 
-    function markDeleteOrRemove(row) {
-      // Se houver checkbox DELETE, marca e esconde; senão remove de vez
-      const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-      if (del) {
-        del.checked = true;
-        row.style.opacity = 0.5;
-        row.style.filter = 'grayscale(1)';
-        row.style.pointerEvents = 'none';
-      } else {
-        row.remove();
-        // Opcional: reindexar (não é obrigatório se não houver DELETE)
-      }
-    }
-
+    // liga os botões remover já existentes (mantém seu código)
     container.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-remove')) {
         const row = e.target.closest('.item-row');
-        markDeleteOrRemove(row);
+        const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        if (del) { del.checked = true; row.style.opacity = 0.5; row.style.filter = 'grayscale(1)'; row.style.pointerEvents = 'none'; }
+        else { row.remove(); }
       }
     });
 
-    addBtn.addEventListener('click', addForm);
+    // pluga no add
+    if (addBtn) addBtn.addEventListener('click', addForm);
+
+    // run inicial
+    enhanceAllQuantidades();
+
   })();
 </script>
+
 {% endblock %}
