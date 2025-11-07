@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Saídas por Produto{% endblock %}
+
+{% block content %}
+<h1>Saídas de Estoque – por Produto</h1>
+
+<form method="get" class="card vstack gap8 mb12">
+  <div class="grid4">
+    <div>
+      <label>De</label>
+      <input type="date" name="de" value="{{ request.GET.de }}">
+    </div>
+    <div>
+      <label>Até</label>
+      <input type="date" name="ate" value="{{ request.GET.ate }}">
+    </div>
+    <div>
+      <label>Busca (produto/cliente)</label>
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="ex: pastel, maria...">
+    </div>
+    <div>
+      <label>Nº do Pedido</label>
+      <input type="text" name="pedido" value="{{ request.GET.pedido }}" placeholder="YYYYMMDD-0001">
+    </div>
+  </div>
+  <div class="hstack gap8">
+    <button class="btn btn-primary">Filtrar</button>
+    <a class="btn" href="{% url 'pedidos:saidas-por-produto' %}">Limpar</a>
+  </div>
+</form>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th class="ta-right">Total que saiu</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.produto__nome }}</td>
+        <td class="ta-right">{{ r.total_saiu }}</td>
+        
+        <td class="ta-right">
+          {% comment %} <a class="btn btn-sm" {% endcomment %}
+          <a class="btn btn-sm" style="display:inline-flex;width:auto"
+            href="{% url 'pedidos:saidas-do-produto-detail' r.produto_id %}?{{ querystring }}">ver pedidos →</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">Nenhuma saída no período.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">«</a>
+    {% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&{{ querystring }}">»</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

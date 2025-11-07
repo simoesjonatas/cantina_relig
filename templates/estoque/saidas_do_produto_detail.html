@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Saídas de {{ produto.nome }}{% endblock %}
+
+{% block content %}
+<h1>Saídas de: {{ produto.nome }}</h1>
+
+<form method="get" class="card vstack gap8 mb12">
+  <div class="grid4">
+    <div>
+      <label>De</label>
+      <input type="date" name="de" value="{{ request.GET.de }}">
+    </div>
+    <div>
+      <label>Até</label>
+      <input type="date" name="ate" value="{{ request.GET.ate }}">
+    </div>
+    <div>
+      <label>Busca (cliente)</label>
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="nome do cliente">
+    </div>
+    <div>
+      <label>Nº do Pedido</label>
+      <input type="text" name="pedido" value="{{ request.GET.pedido }}">
+    </div>
+  </div>
+  <div class="hstack gap8">
+    <button class="btn btn-primary">Filtrar</button>
+    <a class="btn" href="{% url 'pedidos:saidas-do-produto-detail' produto.id %}">Limpar</a>
+    <a class="btn btn-secondary" href="{% url 'pedidos:saidas-por-produto' %}?{{ querystring }}">← Voltar</a>
+  </div>
+</form>
+
+<div class="card">
+  <h3>Por pedido</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Data</th>
+        <th class="ta-right">Quantidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.pedido__numero }}</td>
+        <td>{{ r.pedido__nome_cliente }}</td>
+        <td>{{ r.pedido__criado_em|date:"Y-m-d H:i" }}</td>
+        <td class="ta-right">{{ r.total_pedido }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhuma saída encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">«</a>
+    {% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&{{ querystring }}">»</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card mt12">
+  <details>
+    <summary>Ver últimas linhas de movimentos (auditoria)</summary>
+    <table class="table mt8">
+      <thead>
+        <tr>
+          <th>Quando</th>
+          <th>Pedido</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in linhas %}
+        <tr>
+          <td>{{ m.criado_em|date:"Y-m-d H:i" }}</td>
+          <td>{{ m.pedido.numero }} – {{ m.pedido.nome_cliente }}</td>
+          <td>{{ m.quantidade }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</div>
+{% endblock %}

@@ -86,6 +86,12 @@ class MovimentoEstoque(models.Model):
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     quantidade = models.PositiveIntegerField()
     criado_em = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["tipo", "produto", "criado_em"]),
+            models.Index(fields=["pedido"]),
+        ]
 
 class ComandaCozinha(models.Model):
     pedido = models.OneToOneField(Pedido, related_name="comanda", on_delete=models.CASCADE)
