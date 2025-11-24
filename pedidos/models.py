@@ -25,6 +25,7 @@ class Pedido(models.Model):
 
     numero = models.CharField(max_length=20, unique=True, blank=True)  # gerado no save
     nome_cliente = models.CharField(max_length=120)
+    observacao = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=4, choices=Status.choices, default=Status.RASCUNHO)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     criado_em = models.DateTimeField(auto_now_add=True)

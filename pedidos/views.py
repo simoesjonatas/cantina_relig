@@ -5,7 +5,7 @@ from django.forms import ModelForm, inlineformset_factory
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from .models import Pedido, PedidoItem, Produto, ComandaCozinha
-
+from .forms import PedidoForm, PedidoItemForm, PedidoItemFormSet
 from decimal import Decimal
 from django.views.decorators.http import require_POST
 from .services import confirmar_pedido, concluir_pedido, cancelar_pedido  
@@ -66,19 +66,7 @@ def detalhe_pedido(request, pk):
     })
 
 
-class PedidoForm(ModelForm):
-    class Meta:
-        model = Pedido
-        fields = ["nome_cliente"]
 
-class PedidoItemForm(ModelForm):
-    class Meta:
-        model = PedidoItem
-        fields = ["produto", "quantidade"]  # sem preco_unitario no form
-
-PedidoItemFormSet = inlineformset_factory(
-    Pedido, PedidoItem, form=PedidoItemForm, extra=1, can_delete=True
-)
 
 def criar_pedido(request):
     if request.method == "POST":

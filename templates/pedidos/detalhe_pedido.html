@@ -27,6 +27,13 @@
   </div>
 </div>
 
+{% if pedido.observacao %}
+  <div class="card" style="margin-bottom:12px;">
+    <strong>Observação:</strong>
+    <div style="margin-top:6px; white-space:pre-wrap;">{{ pedido.observacao|linebreaksbr }}</div>
+  </div>
+{% endif %}
+
 <div class="card">
   <table style="width:100%; border-collapse: collapse;">
     <thead>

@@ -24,6 +24,11 @@
           <div>
             <div class="k-numero">#{{ comanda.pedido.numero }}</div>
             <div class="k-cliente"><strong>Cliente:</strong> {{ comanda.pedido.nome_cliente }}</div>
+            {% if comanda.pedido.observacao %}
+              <div class="k-observacao" style="margin-top:6px; color:var(--muted);">
+                <strong>Obs:</strong> {{ comanda.pedido.observacao|truncatechars:120 }}
+              </div>
+            {% endif %}
           </div>
           <div class="k-meta">
             <div><strong>Aberto:</strong> {{ comanda.pedido.criado_em|date:"H:i" }}</div>

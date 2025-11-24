@@ -35,10 +35,14 @@
     </div>
   </section>
 
+  <div class="form-group" style="margin-top:8px;">
+    <label for="{{ form.observacao.id_for_label }}">Observação</label>
+    {{ form.observacao }}
+  </div>
+
   <hr>
 
   <h2 class="mb8">Itens</h2>
-
   {{ formset.management_form }}
 
   <div id="itensContainer" class="vstack gap8">
