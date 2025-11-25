@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Monte seu pedido</h1>
+
+<p><strong>Pedido nº:</strong> {{ pedido.numero }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="vstack gap16">
+    {% for form in formset %}
+        <div class="card p-3">
+            {{ form.id }}
+
+            <div>
+                <label>Produto</label>
+                {{ form.produto }}
+            </div>
+
+            <div class="mt-2">
+                <label>Quantidade</label>
+                {{ form.quantidade }}
+            </div>
+
+            <div class="mt-2">
+                {% if formset.can_delete %}
+                    {{ form.DELETE }} Remover
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+    <button class="btn btn-primary mt-3">Salvar Pedido</button>
+</form>
+
+<hr>
+
+<h3>Total: R$ {{ pedido.total }}</h3>
+
+<a href="{% url 'pedidos:pedido_cliente_enviar_pagamento' pedido.token_publico %}" 
+   class="btn btn-success btn-lg mt-3">
+    Enviar para pagamento
+</a>
+
+{% endblock %}

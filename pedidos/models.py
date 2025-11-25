@@ -2,6 +2,8 @@ from django.db import models, transaction
 from django.db.models import Sum, F
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+import uuid
+
 
 class Produto(models.Model):
     nome = models.CharField(max_length=120, unique=True)
@@ -19,6 +21,7 @@ class Produto(models.Model):
 class Pedido(models.Model):
     class Status(models.TextChoices):
         RASCUNHO = "RASC", "Rascunho"
+        PAGAMENTO = "AGPG", "Aguardando Pagamento"
         ENVIADO_COZINHA = "ENVC", "Enviado à Cozinha"
         CONCLUIDO = "CONC", "Concluído"
         CANCELADO = "CANC", "Cancelado"
@@ -31,6 +34,8 @@ class Pedido(models.Model):
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     finalizado_em = models.DateTimeField(null=True, blank=True)
+    # token_publico = models.UUIDField(default=uuid.uuid4, editable=False, ) # unique=True
+
 
 
     class Meta:

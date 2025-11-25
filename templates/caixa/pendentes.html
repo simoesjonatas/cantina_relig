@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamentos Pendentes{% endblock %}
+
+{% block content %}
+
+<h1>Caixa – Pedidos Aguardando Pagamento</h1>
+
+<div class="card" style="margin-bottom: 20px; padding: 16px;">
+
+  <h2 style="margin-bottom:10px;">📌 Buscar Pedido</h2>
+
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    
+    <!-- Busca manual -->
+    <input id="buscaPedido" type="text" class="form-control"
+           placeholder="Digite o número do pedido (ex: 20251124-0038)"
+           style="flex:1; min-width:260px;">
+
+    <button class="btn primary" onclick="buscarPedido()">
+      Buscar
+    </button>
+
+    <button class="btn" onclick="toggleLeitor()">
+      Ler QR Code
+    </button>
+
+  </div>
+
+  <!-- Área do leitor QR -->
+  <div id="leitorContainer" style="margin-top:20px; display:none; text-align:center;">
+      <h3>Ler QR Code</h3>
+      <video id="qr-video" style="width: 260px; border:1px solid #ddd; border-radius:8px;"></video>
+
+      <button class="btn danger" onclick="toggleLeitor()" style="margin-top:10px;">
+          Fechar Leitor
+      </button>
+  </div>
+</div>
+
+
+
+<h2>Pedidos Aguardando Pagamento</h2>
+
+{% if pedidos %}
+    <div class="vstack gap8">
+    {% for p in pedidos %}
+        <div class="card" style="padding: 12px;">
+            <div class="row" style="justify-content: space-between;">
+                <div>
+                  {% comment %} <a class="btn ghost" href="{% url 'pedidos:detalhe' p.id %}">ver</a> {% endcomment %}
+                  <a href="{% url 'pedidos:detalhe' p.id %}">
+
+                    <strong>Pedido {{ p.numero }}</strong><br>
+                    Cliente: {{ p.nome_cliente }}<br>
+                    Total: <strong>R$ {{ p.total|floatformat:2 }}</strong>
+                  </a>
+                </div>
+
+                <div class="row end" style="align-items: center;">
+                    <a href="{% url 'pedidos:caixa_confirmar_pagamento' p.id %}"
+                       class="btn primary">
+                        Confirmar Pagamento
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% else %}
+    <p>Nenhum pedido aguardando pagamento.</p>
+{% endif %}
+
+
+{# QrScanner: funciona em Android e iPhone #}
+<script type="module">
+  import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
+
+  let scanner = null;
+  let scannerAtivo = false;
+
+  window.toggleLeitor = function () {
+    const ct = document.getElementById("leitorContainer");
+    const videoElem = document.getElementById("qr-video");
+
+    if (!scannerAtivo) {
+      ct.style.display = "block";
+      scannerAtivo = true;
+
+      scanner = new QrScanner(
+        videoElem,
+        result => {
+          const numero = result.data.trim();
+          const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}?numero=" + encodeURIComponent(numero);
+          window.location.href = urlBusca;
+        },
+        {
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+        }
+      );
+
+      scanner.start();
+    } else {
+      ct.style.display = "none";
+      scannerAtivo = false;
+      if (scanner) {
+        scanner.stop();
+      }
+    }
+  }
+
+  window.buscarPedido = function () {
+    const numero = document.getElementById("buscaPedido").value.trim();
+    if (!numero) {
+      alert("Digite o número do pedido.");
+      return;
+    }
+    const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}?numero=" + encodeURIComponent(numero);
+    window.location.href = urlBusca;
+  }
+</script>
+
+{% endblock %}

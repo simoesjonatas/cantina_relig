@@ -66,8 +66,8 @@ def cancelar_pedido(pedido_id: int) -> Pedido:
     if pedido.status == Pedido.Status.CANCELADO:
         return pedido  # já cancelado, nada a fazer
 
-    # 1) Se ainda é RASCUNHO, não houve baixa de estoque: só muda status.
-    if pedido.status == Pedido.Status.RASCUNHO:
+    # 1) Se ainda é RASCUNHO ou PAGAMENTO, não houve baixa de estoque: só muda status.
+    if pedido.status in (Pedido.Status.RASCUNHO, Pedido.Status.PAGAMENTO):
         pedido.status = Pedido.Status.CANCELADO
         pedido.save(update_fields=["status", "atualizado_em"])
         return pedido

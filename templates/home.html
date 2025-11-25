@@ -14,6 +14,8 @@
       <a class="btn ghost" href="/admin/pedidos/produto/">Gerenciar Produtos</a>
       <a class="btn ghost" href="/admin/pedidos/pedido/">Pedidos (Admin)</a>
       <a class="btn ghost" href="{% url 'pedidos:saidas-por-produto' %}">Estoque</a>
+      {% comment %} <a class="btn primary" href="{% url 'pedidos:cliente_pedido_novo' %}">Novo Pedido CLIENTE</a> {% endcomment %}
+      <a class="btn primary" href="{% url 'pedidos:caixa_pendentes' %}">Pedidos Pendendes PG</a>
     </div>
   </section>
 
@@ -40,33 +42,42 @@
 
 <section class="card" style="margin-top:16px;">
   <h2 style="margin-top:0;">Últimos pedidos</h2>
-  <table style="width:100%; border-collapse:collapse;">
-    <thead>
-      <tr>
-        <th style="text-align:left; padding:8px;">Nº</th>
-        <th style="text-align:left; padding:8px;">Cliente</th>
-        <th style="text-align:left; padding:8px;">Status</th>
-        <th style="text-align:right; padding:8px;">Total</th>
-        <th style="text-align:right; padding:8px;">Criado</th>
-        <th style="text-align:right; padding:8px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in ultimos %}
-      <tr style="border-top:1px solid var(--border);">
-        <td style="padding:8px;">{{ p.numero }}</td>
-        <td style="padding:8px;">{{ p.nome_cliente }}</td>
-        <td style="padding:8px;">{{ p.get_status_display }}</td>
-        <td style="padding:8px; text-align:right;">R$ {{ p.total|floatformat:2 }}</td>
-        <td style="padding:8px; text-align:right;">{{ p.criado_em|date:"d/m H:i" }}</td>
-        <td style="padding:8px; text-align:right;">
-          <a class="btn ghost" href="{% url 'pedidos:detalhe' p.pk %}">ver</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" style="padding:12px; color:var(--muted);">Sem pedidos ainda.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  <!-- WRAPPER RESPONSIVO -->
+  <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+    <table style="width:100%; min-width:480px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:8px;">Nº</th>
+          <th style="text-align:left; padding:8px;">Cliente</th>
+          <th style="text-align:left; padding:8px;">Status</th>
+          <th style="text-align:right; padding:8px;">Total</th>
+          <th style="text-align:right; padding:8px;">Criado</th>
+          <th style="text-align:right; padding:8px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in ultimos %}
+        <tr style="border-top:1px solid var(--border);">
+          <td style="padding:8px;">{{ p.numero }}</td>
+          <td style="padding:8px;">{{ p.nome_cliente }}</td>
+          <td style="padding:8px;">{{ p.get_status_display }}</td>
+          <td style="padding:8px; text-align:right;">R$ {{ p.total|floatformat:2 }}</td>
+          <td style="padding:8px; text-align:right;">{{ p.criado_em|date:"d/m H:i" }}</td>
+          <td style="padding:8px; text-align:right;">
+            <a class="btn ghost" href="{% url 'pedidos:detalhe' p.pk %}">ver</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="padding:12px; color:var(--muted);">
+            Sem pedidos ainda.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </section>
+
 {% endblock %}
