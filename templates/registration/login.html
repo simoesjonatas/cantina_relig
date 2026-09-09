@@ -1,11 +1,89 @@
 {% extends "base.html" %}
+{% load static %}
+{% block title %}Entrar{% endblock %}
 
 {% block content %}
-<h1>Login</h1>
+<div class="login-wrap">
+  <div class="login-card card">
+    <img class="login-simbolo" src="{% static 'relig-simbolo.svg' %}" alt="">
+    <h1>Entrar</h1>
+    <p class="login-sub">Acesso da equipe da cantina</p>
 
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button class="btn primary" type="submit">Entrar</button>
-</form>
+    {% for erro in form.non_field_errors %}
+      <div class="flash-item error">{{ erro }}</div>
+    {% endfor %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-group">
+        <label for="{{ form.username.id_for_label }}">Usuário</label>
+        {{ form.username }}
+        {% for erro in form.username.errors %}
+          <span class="campo-erro">{{ erro }}</span>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.password.id_for_label }}">Senha</label>
+        <div class="campo-senha">
+          {{ form.password }}
+          <button type="button" class="ver-senha" id="verSenha"
+                  aria-label="Mostrar senha" aria-pressed="false" title="Mostrar senha">
+            <svg class="olho" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="olho-corte" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+        {% for erro in form.password.errors %}
+          <span class="campo-erro">{{ erro }}</span>
+        {% endfor %}
+      </div>
+
+      <button class="btn primary login-btn" type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <div class="login-cliente">
+    <p>Veio só fazer um pedido? <b>Não precisa de senha.</b></p>
+    <a class="nav-cta" href="{% url 'pedidos:cliente_pedido_novo' %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <path d="M3 6h18"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      Fazer meu pedido
+    </a>
+  </div>
+</div>
+
+<script>
+  // olho: mostrar / ocultar a senha
+  const btnVer = document.getElementById('verSenha');
+  const campoSenha = document.getElementById('{{ form.password.id_for_label }}');
+
+  btnVer.addEventListener('click', () => {
+    const visivel = campoSenha.type === 'text';
+    campoSenha.type = visivel ? 'password' : 'text';
+
+    const rotulo = visivel ? 'Mostrar senha' : 'Ocultar senha';
+    btnVer.setAttribute('aria-pressed', String(!visivel));
+    btnVer.setAttribute('aria-label', rotulo);
+    btnVer.title = rotulo;
+
+    // classe no botão: SVG não implementa a propriedade .hidden do HTML
+    btnVer.classList.toggle('mostrando', !visivel);
+
+    campoSenha.focus();
+  });
+</script>
 {% endblock %}
