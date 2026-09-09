@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Produtos{% endblock %}
+
+{% block content %}
+<div class="rel-cabecalho">
+  <div>
+    <h1 class="rel-titulo">Produtos</h1>
+    <p class="rel-sub">O que a cantina vende, com preço e estoque.</p>
+  </div>
+  <a class="btn primary" href="{% url 'pedidos:produto_criar' %}">+ Novo produto</a>
+</div>
+
+<div class="resumo">
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Cadastrados</span>
+    <span class="resumo-valor">{{ resumo.total }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">À venda</span>
+    <span class="resumo-valor">{{ resumo.ativos }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Sem estoque</span>
+    <span class="resumo-valor {% if resumo.sem_estoque %}alerta{% endif %}">{{ resumo.sem_estoque }}</span>
+  </div>
+</div>
+
+<form method="get" class="card filtros">
+  <div class="grid2">
+    <div class="form-group">
+      <label for="f-q">Buscar</label>
+      <input id="f-q" type="text" name="q" value="{{ busca }}" placeholder="nome do produto">
+    </div>
+    <div class="form-group">
+      <label for="f-situacao">Situação</label>
+      <select id="f-situacao" name="situacao">
+        <option value="">Todos</option>
+        <option value="ativos" {% if situacao == "ativos" %}selected{% endif %}>Só à venda</option>
+        <option value="inativos" {% if situacao == "inativos" %}selected{% endif %}>Só desativados</option>
+      </select>
+    </div>
+  </div>
+  <div class="row gap8">
+    <button class="btn primary" type="submit">Filtrar</button>
+    {% if busca or situacao %}
+      <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Limpar</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="card sem-padding">
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th class="num">Preço</th>
+          <th class="num">Estoque</th>
+          <th>Situação</th>
+          <th class="num">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos %}
+          <tr {% if not p.ativo %}class="linha-inativa"{% endif %}>
+            <td class="rel-produto">{{ p.nome }}</td>
+            <td class="num">R$ {{ p.preco|floatformat:2 }}</td>
+            <td class="num">
+              <span class="chip {% if not p.estoque %}zero{% endif %}">{{ p.estoque }}</span>
+            </td>
+            <td>
+              {% if p.ativo %}
+                <span class="tag tag-ok">À venda</span>
+              {% else %}
+                <span class="tag">Desativado</span>
+              {% endif %}
+            </td>
+            <td class="num acoes">
+              <a class="btn ghost btn-pequeno" href="{% url 'pedidos:produto_editar' p.pk %}">Editar</a>
+
+              <form method="post" action="{% url 'pedidos:produto_alternar_ativo' p.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn ghost btn-pequeno">
+                  {% if p.ativo %}Desativar{% else %}Ativar{% endif %}
+                </button>
+              </form>
+
+              {% if p.vezes_vendido %}
+                <span class="btn-pequeno protegido" title="Já vendido em {{ p.vezes_vendido }} pedido(s) — não pode ser excluído">
+                  vendido {{ p.vezes_vendido }}×
+                </span>
+              {% else %}
+                <a class="btn ghost btn-pequeno perigo" href="{% url 'pedidos:produto_excluir' p.pk %}">Excluir</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="tabela-vazia">
+              {% if busca or situacao %}
+                Nenhum produto encontrado com esses filtros.
+              {% else %}
+                Nenhum produto cadastrado ainda.
+                <a href="{% url 'pedidos:produto_criar' %}">Cadastrar o primeiro</a>.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

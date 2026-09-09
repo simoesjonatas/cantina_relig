@@ -285,3 +285,36 @@ table th { color: var(--muted); font-weight: 600; }
 .auditoria summary { cursor: pointer; font-weight: 600; }
 .auditoria .tabela-wrap { margin: 0 -16px -16px; }
 .auditoria .rel-sub { margin: 10px 0 0; font-size: 13px; }
+
+/* --- CRUD de produtos --- */
+.rel-cabecalho { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.resumo-valor.alerta { color: var(--danger); }
+
+.tag {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; background: #eef0f5; color: var(--muted);
+}
+.tag-ok { background: #eaf8f0; color: #1e6a3a; }
+.linha-inativa td { opacity: .55; }
+.linha-inativa .tag { opacity: 1; }
+
+.acoes { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.acoes form { margin: 0; }
+.btn-pequeno.perigo { color: var(--danger); border-color: transparent; }
+.btn-pequeno.perigo:hover { background: rgba(231, 76, 60, .08); border-color: var(--danger); }
+.protegido {
+  color: var(--muted); background: #f2f2f8; border: 1px solid var(--border);
+  border-radius: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap; cursor: help;
+}
+
+.form-produto { max-width: 480px; }
+.form-produto .form-group { margin-bottom: 16px; }
+.checkbox-linha {
+  display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: #fafaff;
+}
+.checkbox-linha input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+.checkbox-linha small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+.confirmacao { max-width: 560px; }
+.confirmacao-pergunta { font-size: 18px; margin: 0 0 6px; }

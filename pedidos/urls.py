@@ -3,6 +3,7 @@ from . import views
 from . import views_estoque
 from . import views_cliente
 from . import views_painel
+from . import views_produtos
 
 app_name = "pedidos"
 
@@ -22,6 +23,13 @@ urlpatterns = [
     # Balcão (quem entrega o pedido)
     path("balcao/", views.balcao_painel, name="balcao"),
     path("balcao/dados/", views.balcao_dados, name="balcao_dados"),
+
+    # Produtos (CRUD próprio, fora do admin)
+    path("produtos/", views_produtos.produto_lista, name="produto_lista"),
+    path("produtos/novo/", views_produtos.produto_criar, name="produto_criar"),
+    path("produtos/<int:pk>/editar/", views_produtos.produto_editar, name="produto_editar"),
+    path("produtos/<int:pk>/situacao/", views_produtos.produto_alternar_ativo, name="produto_alternar_ativo"),
+    path("produtos/<int:pk>/excluir/", views_produtos.produto_excluir, name="produto_excluir"),
 
     path("estoque/saidas/", views_estoque.saidas_por_produto, name="saidas-por-produto"),
     path("estoque/saidas/<int:produto_id>/", views_estoque.saidas_do_produto_detail, name="saidas-do-produto-detail"),

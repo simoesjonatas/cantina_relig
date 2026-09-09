@@ -4,16 +4,11 @@ from django.core.exceptions import ValidationError
 from .models import Produto, Pedido, PedidoItem, MovimentoEstoque, ComandaCozinha
 from .services import confirmar_pedido, cancelar_pedido
 
-@admin.register(Produto)
-class ProdutoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "preco", "estoque", "ativo", "criado_em")
-    list_filter = ("ativo",)
-    search_fields = ("nome",)
+# Produto sai do admin: agora é gerenciado em /pedidos/produtos/
 
 class PedidoItemInline(admin.TabularInline):
     model = PedidoItem
     extra = 1
-    autocomplete_fields = ("produto",)
     fields = ("produto", "quantidade", "preco_unitario")
 
 @admin.action(description="Confirmar e Enviar à Cozinha")

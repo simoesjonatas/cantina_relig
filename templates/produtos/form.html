@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{% if produto %}Editar {{ produto.nome }}{% else %}Novo produto{% endif %}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:produto_lista' %}">← Produtos</a>
+
+<h1 class="rel-titulo">{% if produto %}Editar produto{% else %}Novo produto{% endif %}</h1>
+<p class="rel-sub">
+  {% if produto %}
+    Alterações valem para os próximos pedidos; os já feitos mantêm o preço da época.
+  {% else %}
+    Depois de cadastrado, ele aparece na tela de montar pedido.
+  {% endif %}
+</p>
+
+<form method="post" class="card form-produto">
+  {% csrf_token %}
+
+  {% for erro in form.non_field_errors %}
+    <div class="flash-item error">{{ erro }}</div>
+  {% endfor %}
+
+  {% for campo in form %}
+    {% if campo.name == "ativo" %}
+      <label class="checkbox-linha">
+        {{ campo }}
+        <span>
+          <b>{{ campo.label }}</b>
+          <small>Desmarcado, ele some da tela de montar pedido — mas o histórico continua.</small>
+        </span>
+      </label>
+    {% else %}
+      <div class="form-group">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+        {{ campo }}
+        {% for erro in campo.errors %}
+          <span class="campo-erro">{{ erro }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  <div class="row gap8" style="margin-top:18px;">
+    <button class="btn primary" type="submit">
+      {% if produto %}Salvar alterações{% else %}Cadastrar produto{% endif %}
+    </button>
+    <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

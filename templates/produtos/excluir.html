@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Excluir {{ produto.nome }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:produto_lista' %}">← Produtos</a>
+
+<h1 class="rel-titulo">Excluir produto</h1>
+
+<div class="card confirmacao">
+  {% if em_pedidos %}
+    <div class="flash-item error">
+      <b>“{{ produto.nome }}” não pode ser excluído.</b>
+      Ele já foi vendido em {{ em_pedidos }} pedido(s), e apagá-lo apagaria esse histórico de vendas.
+    </div>
+    <p>Se ele saiu do cardápio, use <b>Desativar</b>: some da tela de pedidos e o histórico fica intacto.</p>
+    <div class="row gap8">
+      <form method="post" action="{% url 'pedidos:produto_alternar_ativo' produto.pk %}">
+        {% csrf_token %}
+        <button class="btn primary" type="submit">Desativar em vez de excluir</button>
+      </form>
+      <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Voltar</a>
+    </div>
+  {% else %}
+    <p class="confirmacao-pergunta">
+      Excluir <b>{{ produto.nome }}</b> (R$ {{ produto.preco|floatformat:2 }}, {{ produto.estoque }} em estoque)?
+    </p>
+    <p class="rel-sub">Nunca foi vendido, então nenhum pedido é afetado. Não dá para desfazer.</p>
+    <form method="post" class="row gap8">
+      {% csrf_token %}
+      <button class="btn danger" type="submit">Sim, excluir</button>
+      <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Cancelar</a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

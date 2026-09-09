@@ -11,7 +11,7 @@
     <div class="row gap8" style="flex-wrap:wrap;">
       <a class="btn primary" href="{% url 'pedidos:criar' %}">+ Novo Pedido</a>
       <a class="btn" href="{% url 'pedidos:cozinha' %}">Abrir Cozinha</a>
-      <a class="btn ghost" href="/admin/pedidos/produto/">Gerenciar Produtos</a>
+      <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Gerenciar Produtos</a>
       <a class="btn ghost" href="/admin/pedidos/pedido/">Pedidos (Admin)</a>
       <a class="btn ghost" href="{% url 'pedidos:saidas-por-produto' %}">Estoque</a>
       {% comment %} <a class="btn primary" href="{% url 'pedidos:cliente_pedido_novo' %}">Novo Pedido CLIENTE</a> {% endcomment %}
