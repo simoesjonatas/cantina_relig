@@ -4,6 +4,7 @@ from . import views_estoque
 from . import views_cliente
 from . import views_painel
 from . import views_produtos
+from . import views_usuarios
 
 app_name = "pedidos"
 
@@ -24,6 +25,14 @@ urlpatterns = [
     # Balcão (quem entrega o pedido)
     path("balcao/", views.balcao_painel, name="balcao"),
     path("balcao/dados/", views.balcao_dados, name="balcao_dados"),
+
+    # Usuários (só administradores)
+    path("usuarios/", views_usuarios.usuario_lista, name="usuario_lista"),
+    path("usuarios/novo/", views_usuarios.usuario_criar, name="usuario_criar"),
+    path("usuarios/<int:pk>/editar/", views_usuarios.usuario_editar, name="usuario_editar"),
+    path("usuarios/<int:pk>/senha/", views_usuarios.usuario_senha, name="usuario_senha"),
+    path("usuarios/<int:pk>/acesso/", views_usuarios.usuario_alternar_ativo, name="usuario_alternar_ativo"),
+    path("usuarios/<int:pk>/excluir/", views_usuarios.usuario_excluir, name="usuario_excluir"),
 
     # Produtos (CRUD próprio, fora do admin)
     path("produtos/", views_produtos.produto_lista, name="produto_lista"),

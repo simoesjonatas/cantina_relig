@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Senha de {{ usuario.username }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:usuario_lista' %}">← Usuários</a>
+
+<h1 class="rel-titulo">Alterar senha</h1>
+<p class="rel-sub">
+  Definindo uma nova senha para <b>{{ usuario.first_name|default:usuario.username }}</b>
+  (<code>{{ usuario.username }}</code>).
+  {% if usuario == request.user %}Como é a sua conta, você continuará logado.{% endif %}
+</p>
+
+<form method="post" class="card form-produto">
+  {% csrf_token %}
+
+  {% for erro in form.non_field_errors %}
+    <div class="flash-item error">{{ erro }}</div>
+  {% endfor %}
+
+  {% for campo in form %}
+    <div class="form-group">
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+      {{ campo }}
+      {% if campo.help_text %}<small class="campo-ajuda">{{ campo.help_text|safe }}</small>{% endif %}
+      {% for erro in campo.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+  {% endfor %}
+
+  <div class="row gap8" style="margin-top:18px;">
+    <button class="btn primary" type="submit">Salvar nova senha</button>
+    <a class="btn ghost" href="{% url 'pedidos:usuario_lista' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

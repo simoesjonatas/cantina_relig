@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Excluir {{ usuario.username }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:usuario_lista' %}">← Usuários</a>
+
+<h1 class="rel-titulo">Excluir usuário</h1>
+
+<div class="card confirmacao">
+  {% if e_voce %}
+    <div class="flash-item error"><b>Esta é a sua conta.</b> Você não pode excluir a si mesmo.</div>
+    <a class="btn ghost" href="{% url 'pedidos:usuario_lista' %}">Voltar</a>
+  {% elif ultimo_admin %}
+    <div class="flash-item error">
+      <b>“{{ usuario.username }}” é o único administrador.</b>
+      Excluir deixaria o sistema sem ninguém para gerenciar usuários.
+    </div>
+    <p>Promova outra pessoa a administrador antes.</p>
+    <a class="btn ghost" href="{% url 'pedidos:usuario_lista' %}">Voltar</a>
+  {% else %}
+    <p class="confirmacao-pergunta">
+      Excluir <b>{{ usuario.first_name|default:usuario.username }}</b> (<code>{{ usuario.username }}</code>)?
+    </p>
+    <p class="rel-sub">
+      Se a pessoa só saiu da equipe, prefira <b>Bloquear</b> — o acesso acaba e o registro fica.
+      Excluir não dá para desfazer.
+    </p>
+    <form method="post" class="row gap8">
+      {% csrf_token %}
+      <button class="btn danger" type="submit">Sim, excluir</button>
+      <a class="btn ghost" href="{% url 'pedidos:usuario_lista' %}">Cancelar</a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

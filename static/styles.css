@@ -397,3 +397,18 @@ table th { color: var(--muted); font-weight: 600; }
   margin-left: 6px; padding: 2px 6px; border-radius: 6px; cursor: help;
   font-size: 11px; font-weight: 700; background: #fff8e8; color: #7a5300; border: 1px solid #ffe0a6;
 }
+
+/* --- Usuários --- */
+.u-login { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.tag-admin { background: rgba(108, 92, 231, .12); color: var(--primary); }
+.tag-bloqueado { background: #fdeaea; color: #7e1a15; }
+.marca-voce {
+  margin-left: 6px; padding: 2px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; background: #eef2ff; color: #4338ca;
+}
+.campo-ajuda { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.campo-ajuda ul { margin: 4px 0 0; padding-left: 18px; }
+.confirmacao code, .rel-sub code {
+  background: #f2f2f8; border: 1px solid var(--border);
+  border-radius: 6px; padding: 1px 6px; font-size: 13px;
+}
