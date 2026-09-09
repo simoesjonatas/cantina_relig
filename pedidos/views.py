@@ -8,7 +8,10 @@ from .models import Pedido, PedidoItem, Produto, ComandaCozinha
 from .forms import PedidoForm, PedidoItemForm, PedidoItemFormSet
 from decimal import Decimal
 from django.views.decorators.http import require_POST
-from .services import confirmar_pedido, concluir_pedido, cancelar_pedido  
+from .services import (
+    confirmar_pedido, concluir_pedido, cancelar_pedido,
+    marcar_retirado, prontos_aguardando_retirada, JANELA_PRONTOS_MIN,
+)
 from django.utils import timezone
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
@@ -117,12 +120,30 @@ def confirmar_enviar(request, pk):
     # return redirect("pedidos:detalhe", pk=pk)
 
 @login_required
+@require_POST
+def marcar_retirado_view(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    try:
+        marcar_retirado(pedido.id)
+        messages.success(request, f"Pedido {pedido.numero} entregue para {pedido.nome_cliente}.")
+    except ValidationError as e:
+        messages.error(request, str(e))
+    return redirect("pedidos:cozinha")
+
+
+@login_required
 def cozinha_painel(request):
     # mostra apenas pedidos enviados e não concluídos/cancelados
     comandas = ComandaCozinha.objects.select_related("pedido").filter(
         pedido__status__in=[Pedido.Status.ENVIADO_COZINHA]
     ).order_by("impresso_em")
-    return render(request, "pedidos/cozinha.html", {"comandas": comandas})
+    # prontos que ainda não foram entregues no balcão
+    prontos = prontos_aguardando_retirada().order_by("finalizado_em")
+    return render(request, "pedidos/cozinha.html", {
+        "comandas": comandas,
+        "prontos": prontos,
+        "janela_prontos": JANELA_PRONTOS_MIN,
+    })
 
 @login_required
 def home(request):

@@ -3,6 +3,35 @@ from django.db.models import F
 from django.core.exceptions import ValidationError
 from .models import Pedido, Produto, MovimentoEstoque, ComandaCozinha
 from django.utils import timezone
+from datetime import timedelta
+
+# Por quanto tempo um pedido pronto continua na fila de retirada mesmo que
+# ninguém clique em "Retirado" (rede de segurança para dias movimentados).
+JANELA_PRONTOS_MIN = 60
+
+
+def prontos_aguardando_retirada():
+    """Pedidos concluídos que ainda não foram entregues (e não expiraram)."""
+    corte = timezone.now() - timedelta(minutes=JANELA_PRONTOS_MIN)
+    return Pedido.objects.filter(
+        status=Pedido.Status.CONCLUIDO,
+        retirado_em__isnull=True,
+        finalizado_em__gte=corte,
+    )
+
+
+@transaction.atomic
+def marcar_retirado(pedido_id: int) -> Pedido:
+    """Balcão confirma que o cliente pegou o pedido: sai do painel na hora."""
+    pedido = Pedido.objects.select_for_update().get(pk=pedido_id)
+    if pedido.status != Pedido.Status.CONCLUIDO:
+        raise ValidationError("Apenas pedidos concluídos podem ser marcados como retirados.")
+    if pedido.retirado_em:
+        return pedido  # idempotente: dois cliques seguidos não quebram nada
+    pedido.retirado_em = timezone.now()
+    pedido.save(update_fields=["retirado_em", "atualizado_em"])
+    return pedido
+
 
 @transaction.atomic
 def concluir_pedido(pedido_id: int) -> Pedido:

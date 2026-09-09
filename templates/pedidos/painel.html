@@ -1,0 +1,315 @@
+{% load static %}<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Painel de Pedidos — RELIG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{% static 'relig-simbolo.svg' %}" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #12121c;
+      --painel: #1b1b2a;
+      --border: #2c2c42;
+      --text: #f4f4fa;
+      --muted: #9a9ab5;
+      --primary: #8b7bff;
+      --preparo: #f0a020;
+      --preparo-bg: rgba(240, 160, 32, 0.10);
+      --pronto: #2ecc71;
+      --pronto-bg: rgba(46, 204, 113, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .tela { height: 100vh; display: flex; flex-direction: column; }
+
+    /* ---------- topo ---------- */
+    .topo {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 14px clamp(16px, 2vw, 32px);
+      border-bottom: 1px solid var(--border); background: var(--painel);
+    }
+    .marca { display: flex; align-items: center; gap: clamp(10px, 1vw, 16px); text-decoration: none; }
+    .marca .simbolo { height: clamp(30px, 3.2vw, 52px); width: auto; display: block; border-radius: 22%; }
+    .marca b { font-size: clamp(20px, 2.2vw, 34px); font-weight: 800; color: var(--primary); letter-spacing: 1px; }
+    .marca .sub { font-size: clamp(12px, 1.1vw, 18px); color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+    .marca .voltar { font-size: clamp(24px, 2.4vw, 36px); color: var(--muted); line-height: 1; }
+    .marca:hover .voltar, .marca:hover b { color: var(--text); }
+    .topo-dir { display: flex; align-items: center; gap: 14px; }
+    .relogio { font-size: clamp(20px, 2.2vw, 34px); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--pronto); transition: background .3s; }
+    .status-dot.offline { background: #e74c3c; }
+    .acao {
+      appearance: none; cursor: pointer; font: inherit; font-size: 14px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px;
+    }
+    .acao:hover { color: var(--text); border-color: var(--primary); }
+    .acao.ativo { color: var(--pronto); border-color: var(--pronto); }
+
+    /* ---------- colunas ---------- */
+    .colunas { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border); min-height: 0; }
+    .coluna { background: var(--bg); display: flex; flex-direction: column; min-height: 0; }
+
+    .coluna-topo {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: clamp(10px, 1.4vh, 18px) clamp(16px, 2vw, 32px);
+    }
+    .coluna-titulo {
+      font-size: clamp(22px, 3vw, 48px); font-weight: 800;
+      text-transform: uppercase; letter-spacing: 2px; margin: 0;
+    }
+    .contador {
+      font-size: clamp(16px, 1.6vw, 26px); font-weight: 800;
+      min-width: 2.4em; text-align: center;
+      border-radius: 999px; padding: 4px 12px;
+    }
+    .coluna.preparo .coluna-titulo, .coluna.preparo .contador { color: var(--preparo); }
+    .coluna.preparo .contador { background: var(--preparo-bg); }
+    .coluna.pronto .coluna-titulo, .coluna.pronto .contador { color: var(--pronto); }
+    .coluna.pronto .contador { background: var(--pronto-bg); }
+
+    .lista {
+      list-style: none; margin: 0; flex: 1; min-height: 0; overflow: hidden;
+      padding: 0 clamp(16px, 2vw, 32px) clamp(16px, 2vh, 28px);
+      display: flex; flex-direction: column; gap: clamp(6px, 1vh, 12px);
+    }
+    .lista li {
+      display: flex; align-items: center; gap: clamp(10px, 1.2vw, 20px);
+      padding: clamp(8px, 1.3vh, 18px) clamp(12px, 1.4vw, 22px);
+      border-radius: 14px; border: 1px solid var(--border); background: var(--painel);
+      animation: entrar .35s ease-out;
+    }
+    .coluna.preparo .lista li { border-left: 6px solid var(--preparo); }
+    .coluna.pronto .lista li { border-left: 6px solid var(--pronto); background: var(--pronto-bg); }
+
+    .senha {
+      font-size: clamp(16px, 1.6vw, 28px); font-weight: 800;
+      font-variant-numeric: tabular-nums; color: var(--muted);
+      min-width: 2.2em; text-align: right;
+    }
+    .coluna.pronto .senha { color: var(--pronto); }
+    .nome {
+      font-size: clamp(22px, 3.2vw, 52px); font-weight: 700; line-height: 1.15;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+
+    /* pedido que acabou de ficar pronto: pisca e chama atenção */
+    .lista li.novo { animation: entrar .35s ease-out, piscar 1s ease-in-out 6; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes piscar {
+      0%, 100% { background: var(--pronto-bg); box-shadow: none; }
+      50% { background: rgba(46, 204, 113, 0.42); box-shadow: 0 0 0 3px rgba(46, 204, 113, .55); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lista li, .lista li.novo { animation: none; }
+    }
+
+    .vazio {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: clamp(16px, 1.6vw, 26px); opacity: .65;
+    }
+    .mais {
+      color: var(--muted); font-size: clamp(14px, 1.2vw, 20px);
+      text-align: center; padding: 6px; border: 1px dashed var(--border);
+      border-radius: 12px; background: transparent;
+    }
+
+    /* telas pequenas: uma coluna embaixo da outra */
+    @media (max-width: 720px) {
+      html, body { overflow: auto; }
+      .tela { height: auto; min-height: 100vh; }
+      .colunas { grid-template-columns: 1fr; }
+      .lista { overflow: visible; }
+      .marca .sub, .acao.so-tv { display: none; }
+      .topo { position: sticky; top: 0; z-index: 5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="tela">
+    <header class="topo">
+      <a class="marca" href="/" title="Voltar ao sistema">
+        <span class="voltar" aria-hidden="true">‹</span>
+        <img class="simbolo" src="{% static 'relig-simbolo.svg' %}" alt="RELIG">
+        <b>RELIG</b>
+        <span class="sub">Painel de Pedidos</span>
+      </a>
+      <div class="topo-dir">
+        <button class="acao" id="btnSom" type="button" title="Tocar um aviso sonoro quando um pedido ficar pronto">🔔 Ativar som</button>
+        <button class="acao so-tv" id="btnTela" type="button" title="Tela cheia">⛶ Tela cheia</button>
+        <span class="status-dot" id="statusDot" title="Conexão com o servidor"></span>
+        <span class="relogio" id="relogio">--:--</span>
+      </div>
+    </header>
+
+    <div class="colunas">
+      <section class="coluna preparo">
+        <div class="coluna-topo">
+          <h1 class="coluna-titulo">Em preparo</h1>
+          <span class="contador" id="contPreparo">0</span>
+        </div>
+        <ul class="lista" id="listaPreparo"></ul>
+      </section>
+
+      <section class="coluna pronto">
+        <div class="coluna-topo">
+          <h1 class="coluna-titulo">Pronto</h1>
+          <span class="contador" id="contPronto">0</span>
+        </div>
+        <ul class="lista" id="listaPronto"></ul>
+      </section>
+    </div>
+  </div>
+
+  {{ dados|json_script:"dados-iniciais" }}
+
+  <script>
+    const URL_DADOS = "{% url 'pedidos:painel_dados' %}";
+    const INTERVALO_MS = 5000;
+
+    const els = {
+      preparo: document.getElementById('listaPreparo'),
+      pronto: document.getElementById('listaPronto'),
+      contPreparo: document.getElementById('contPreparo'),
+      contPronto: document.getElementById('contPronto'),
+      relogio: document.getElementById('relogio'),
+      dot: document.getElementById('statusDot'),
+      btnSom: document.getElementById('btnSom'),
+      btnTela: document.getElementById('btnTela'),
+    };
+
+    // ---------- renderização ----------
+    function montarItem(pedido, novo) {
+      const li = document.createElement('li');
+      if (novo) li.classList.add('novo');
+
+      const senha = document.createElement('span');
+      senha.className = 'senha';
+      senha.textContent = pedido.curto ? '#' + pedido.curto : '';
+
+      const nome = document.createElement('span');
+      nome.className = 'nome';
+      nome.textContent = pedido.nome;
+      nome.title = pedido.numero || '';
+
+      li.append(senha, nome);
+      return li;
+    }
+
+    function preencher(lista, pedidos, total, vazioTexto, novos) {
+      lista.replaceChildren();
+      if (!pedidos.length) {
+        const vazio = document.createElement('li');
+        vazio.className = 'vazio';
+        vazio.textContent = vazioTexto;
+        lista.append(vazio);
+        return;
+      }
+      pedidos.forEach(p => lista.append(montarItem(p, novos && novos.has(p.id))));
+
+      // não cabe tudo na tela: avisa quantos ficaram de fora
+      const ocultos = total - pedidos.length;
+      if (ocultos > 0) {
+        const mais = document.createElement('li');
+        mais.className = 'mais';
+        mais.textContent = `+ ${ocultos} ${ocultos === 1 ? 'pedido' : 'pedidos'}`;
+        lista.append(mais);
+      }
+    }
+
+    // ids que já estavam em "Pronto" — serve para destacar/anunciar só o que é novo
+    let jaVistos = null;
+
+    function render(dados) {
+      const idsProntos = new Set(dados.prontos.map(p => p.id));
+      let novos = new Set();
+
+      if (jaVistos === null) {
+        jaVistos = idsProntos;            // primeira carga: nada é "novo"
+      } else {
+        dados.prontos.forEach(p => { if (!jaVistos.has(p.id)) novos.add(p.id); });
+        jaVistos = idsProntos;
+      }
+
+      preencher(els.preparo, dados.em_preparo, dados.total_em_preparo, 'Nenhum pedido na fila', null);
+      preencher(els.pronto, dados.prontos, dados.total_prontos, 'Nenhum pedido pronto', novos);
+      els.contPreparo.textContent = dados.total_em_preparo;
+      els.contPronto.textContent = dados.total_prontos;
+
+      if (novos.size) tocarAviso();
+    }
+
+    // ---------- atualização automática ----------
+    async function atualizar() {
+      try {
+        const resp = await fetch(URL_DADOS, { headers: { 'X-Requested-With': 'fetch' }, cache: 'no-store' });
+        if (!resp.ok) throw new Error(resp.status);
+        render(await resp.json());
+        els.dot.classList.remove('offline');
+      } catch (e) {
+        els.dot.classList.add('offline');   // mantém a última tela visível
+      }
+    }
+
+    render(JSON.parse(document.getElementById('dados-iniciais').textContent));
+    // o painel fica ligado o tempo todo numa TV: atualiza sempre, sem depender
+    // de a aba estar "visível" (navegador em modo quiosque pode se declarar oculto)
+    setInterval(atualizar, INTERVALO_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') atualizar();
+    });
+
+    // ---------- relógio ----------
+    function tickRelogio() {
+      els.relogio.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    tickRelogio();
+    setInterval(tickRelogio, 10000);
+
+    // ---------- aviso sonoro (opcional, precisa de um clique para liberar o áudio) ----------
+    let audioCtx = null;
+    function tocarAviso() {
+      if (!audioCtx) return;
+      const agora = audioCtx.currentTime;
+      [880, 1320].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, agora + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.25, agora + i * 0.18 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, agora + i * 0.18 + 0.35);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(agora + i * 0.18);
+        osc.stop(agora + i * 0.18 + 0.4);
+      });
+    }
+    els.btnSom.addEventListener('click', () => {
+      if (audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+        els.btnSom.classList.remove('ativo');
+        els.btnSom.textContent = '🔔 Ativar som';
+        return;
+      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      els.btnSom.classList.add('ativo');
+      els.btnSom.textContent = '🔔 Som ligado';
+      tocarAviso();
+    });
+
+    // ---------- tela cheia ----------
+    els.btnTela.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => {});
+    });
+  </script>
+</body>
+</html>

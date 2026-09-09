@@ -63,6 +63,32 @@
   </div>
 {% endif %}
 
+<h2 class="r-titulo">Prontos — aguardando retirada</h2>
+{% if prontos %}
+  <ul class="r-lista">
+    {% for pedido in prontos %}
+      <li class="r-item card">
+        <div class="r-info">
+          <span class="r-nome">{{ pedido.nome_cliente }}</span>
+          <span class="r-numero">#{{ pedido.numero }}</span>
+        </div>
+        <span class="r-hora">pronto às {{ pedido.finalizado_em|date:"H:i" }}</span>
+        <form method="post" action="{% url 'pedidos:retirado' pedido.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn">Retirado</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+  <p class="r-aviso">
+    Some do painel quando alguém clica em “Retirado” — ou sozinho depois de {{ janela_prontos }} minutos.
+  </p>
+{% else %}
+  <div class="card" style="text-align:center; color:var(--muted);">
+    Nenhum pedido aguardando retirada.
+  </div>
+{% endif %}
+
 <script>
   // --- relógio "Há: Xmin" ---
   function humanize(ms) {

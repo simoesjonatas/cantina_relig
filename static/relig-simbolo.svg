@@ -1,0 +1,7 @@
+<!-- Símbolo RELIG. Para trocar a cor, mude o fill do <rect> de fundo. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="RELIG">
+  <rect width="100" height="100" rx="25" fill="#F4511E"/>
+  <rect x="30" y="27" width="11.5" height="23" rx="2.5" fill="#fff"/>
+  <rect x="58.5" y="27" width="11.5" height="23" rx="2.5" fill="#fff"/>
+  <path d="M37 62a13 13 0 0 0 26 0z" fill="#fff"/>
+</svg>

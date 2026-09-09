@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import views_estoque
 from . import views_cliente
+from . import views_painel
 
 app_name = "pedidos"
 
@@ -10,8 +11,13 @@ urlpatterns = [
     path("<int:pk>/", views.detalhe_pedido, name="detalhe"),
     path("<int:pk>/confirmar/", views.confirmar_enviar, name="confirmar"),
     path("cozinha/", views.cozinha_painel, name="cozinha"),
+
+    # Painel público (TV da cantina): "Em preparo" x "Pronto"
+    path("painel/", views_painel.painel, name="painel"),
+    path("painel/dados/", views_painel.painel_dados, name="painel_dados"),
     path("<int:pk>/concluir/", views.concluir_pedido_view, name="concluir"),
     path("<int:pk>/cancelar/", views.cancelar_pedido_view, name="cancelar"),
+    path("<int:pk>/retirado/", views.marcar_retirado_view, name="retirado"),
 
     path("estoque/saidas/", views_estoque.saidas_por_produto, name="saidas-por-produto"),
     path("estoque/saidas/<int:produto_id>/", views_estoque.saidas_do_produto_detail, name="saidas-do-produto-detail"),

@@ -34,6 +34,7 @@ class Pedido(models.Model):
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     finalizado_em = models.DateTimeField(null=True, blank=True)
+    retirado_em = models.DateTimeField(null=True, blank=True)  # quando o cliente pegou no balcão
     # token_publico = models.UUIDField(default=uuid.uuid4, editable=False, ) # unique=True
 
 
