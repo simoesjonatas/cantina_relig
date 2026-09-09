@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Balcão{% endblock %}
+
+{% block content %}
+<div class="b-topo">
+  <h1>Balcão — entregar pedidos</h1>
+  <span class="b-contador">{{ prontos|length }}</span>
+</div>
+
+{% if prontos %}
+  <ul class="b-lista" id="lista" data-ids="{{ ids_atuais }}">
+    {% for pedido in prontos %}
+      <li class="b-item card">
+        <div class="b-info">
+          <span class="b-nome">{{ pedido.nome_cliente }}</span>
+          <span class="b-meta">
+            #{{ pedido.numero }} · pronto às {{ pedido.finalizado_em|date:"H:i" }}
+            <b class="b-espera" data-desde="{{ pedido.finalizado_em|date:'c' }}"></b>
+          </span>
+
+          <ul class="b-itens">
+            {% for item in pedido.itens.all %}
+              <li><b>{{ item.quantidade }}×</b> {{ item.produto.nome }}</li>
+            {% empty %}
+              <li class="b-sem-itens">pedido sem itens</li>
+            {% endfor %}
+          </ul>
+
+          {% if pedido.observacao %}
+            <p class="b-obs"><b>Obs:</b> {{ pedido.observacao }}</p>
+          {% endif %}
+        </div>
+        <form method="post" action="{% url 'pedidos:retirado' pedido.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn b-btn">Retirado</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+  <p class="b-aviso">
+    Clique em “Retirado” quando entregar — o nome sai do painel na hora.
+    Se esquecer, sai sozinho depois de {{ janela_prontos }} minutos.
+  </p>
+{% else %}
+  <div class="b-vazio card" id="lista" data-ids="">
+    Nenhum pedido pronto no momento.
+    <small>Esta tela se atualiza sozinha assim que a cozinha concluir um pedido.</small>
+  </div>
+{% endif %}
+
+<script>
+  // --- há quanto tempo está esperando ---
+  function humanize(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return 'agora';
+    if (min < 60) return `esperando há ${min}min`;
+    return `esperando há ${Math.floor(min / 60)}h ${min % 60}min`;
+  }
+  function tickEspera() {
+    document.querySelectorAll('.b-espera').forEach(el => {
+      const desde = new Date(el.dataset.desde);
+      el.textContent = '· ' + humanize(Date.now() - desde.getTime());
+      // passou da metade da janela: destaca para não esquecerem
+      el.classList.toggle('atrasado', Date.now() - desde.getTime() > {{ janela_prontos }} * 30000);
+    });
+  }
+  tickEspera();
+  setInterval(tickEspera, 30000);
+
+  // --- recarrega só quando a lista realmente muda ---
+  const lista = document.getElementById('lista');
+  async function checar() {
+    try {
+      const r = await fetch("{% url 'pedidos:balcao_dados' %}", { cache: 'no-store' });
+      if (!r.ok) return;
+      const { ids } = await r.json();
+      if (ids.join(',') !== lista.dataset.ids) location.reload();
+    } catch (e) { /* sem rede: mantém a tela como está */ }
+  }
+  setInterval(checar, 8000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checar();
+  });
+</script>
+{% endblock %}

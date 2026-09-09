@@ -15,6 +15,7 @@ from .services import (
 from django.utils import timezone
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 
 
 @require_POST
@@ -128,7 +129,7 @@ def marcar_retirado_view(request, pk):
         messages.success(request, f"Pedido {pedido.numero} entregue para {pedido.nome_cliente}.")
     except ValidationError as e:
         messages.error(request, str(e))
-    return redirect("pedidos:cozinha")
+    return redirect("pedidos:balcao")
 
 
 @login_required
@@ -137,13 +138,30 @@ def cozinha_painel(request):
     comandas = ComandaCozinha.objects.select_related("pedido").filter(
         pedido__status__in=[Pedido.Status.ENVIADO_COZINHA]
     ).order_by("impresso_em")
-    # prontos que ainda não foram entregues no balcão
-    prontos = prontos_aguardando_retirada().order_by("finalizado_em")
-    return render(request, "pedidos/cozinha.html", {
-        "comandas": comandas,
+    return render(request, "pedidos/cozinha.html", {"comandas": comandas})
+
+
+@login_required
+def balcao_painel(request):
+    """Tela de quem entrega: só os pedidos prontos, com o botão de retirada."""
+    prontos = (
+        prontos_aguardando_retirada()
+        .order_by("finalizado_em")
+        .prefetch_related("itens__produto")
+    )
+    return render(request, "pedidos/balcao.html", {
         "prontos": prontos,
+        "ids_atuais": ",".join(str(p.id) for p in prontos),
         "janela_prontos": JANELA_PRONTOS_MIN,
     })
+
+
+@login_required
+def balcao_dados(request):
+    """Só os ids, para a tela saber quando precisa se atualizar."""
+    ids = prontos_aguardando_retirada().order_by("finalizado_em").values_list("id", flat=True)
+    return JsonResponse({"ids": list(ids)})
+
 
 @login_required
 def home(request):

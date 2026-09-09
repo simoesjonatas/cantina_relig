@@ -19,6 +19,10 @@ urlpatterns = [
     path("<int:pk>/cancelar/", views.cancelar_pedido_view, name="cancelar"),
     path("<int:pk>/retirado/", views.marcar_retirado_view, name="retirado"),
 
+    # Balcão (quem entrega o pedido)
+    path("balcao/", views.balcao_painel, name="balcao"),
+    path("balcao/dados/", views.balcao_dados, name="balcao_dados"),
+
     path("estoque/saidas/", views_estoque.saidas_por_produto, name="saidas-por-produto"),
     path("estoque/saidas/<int:produto_id>/", views_estoque.saidas_do_produto_detail, name="saidas-do-produto-detail"),
 
