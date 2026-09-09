@@ -2,93 +2,124 @@
 {% block title %}Saídas de {{ produto.nome }}{% endblock %}
 
 {% block content %}
-<h1>Saídas de: {{ produto.nome }}</h1>
+<a class="rel-voltar" href="{% url 'pedidos:saidas-por-produto' %}{% if querystring %}?{{ querystring }}{% endif %}">← Todos os produtos</a>
 
-<form method="get" class="card vstack gap8 mb12">
+<h1 class="rel-titulo">{{ produto.nome }}</h1>
+<p class="rel-sub">Em quais pedidos esse produto saiu{% if tem_filtro %} no período filtrado{% endif %}.</p>
+
+<div class="resumo">
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Unidades que saíram</span>
+    <span class="resumo-valor">{{ total_unidades }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Pedidos</span>
+    <span class="resumo-valor">{{ total_pedidos }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Em estoque agora</span>
+    <span class="resumo-valor">{{ produto.estoque }}</span>
+  </div>
+</div>
+
+<form method="get" class="card filtros">
   <div class="grid4">
-    <div>
-      <label>De</label>
-      <input type="date" name="de" value="{{ request.GET.de }}">
+    <div class="form-group">
+      <label for="f-de">De</label>
+      <input id="f-de" type="date" name="de" value="{{ request.GET.de }}">
     </div>
-    <div>
-      <label>Até</label>
-      <input type="date" name="ate" value="{{ request.GET.ate }}">
+    <div class="form-group">
+      <label for="f-ate">Até</label>
+      <input id="f-ate" type="date" name="ate" value="{{ request.GET.ate }}">
     </div>
-    <div>
-      <label>Busca (cliente)</label>
-      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="nome do cliente">
+    <div class="form-group">
+      <label for="f-q">Cliente</label>
+      <input id="f-q" type="text" name="q" value="{{ request.GET.q }}" placeholder="nome do cliente">
     </div>
-    <div>
-      <label>Nº do Pedido</label>
-      <input type="text" name="pedido" value="{{ request.GET.pedido }}">
+    <div class="form-group">
+      <label for="f-pedido">Nº do pedido</label>
+      <input id="f-pedido" type="text" name="pedido" value="{{ request.GET.pedido }}" placeholder="20260909-0001">
     </div>
   </div>
-  <div class="hstack gap8">
-    <button class="btn btn-primary">Filtrar</button>
-    <a class="btn" href="{% url 'pedidos:saidas-do-produto-detail' produto.id %}">Limpar</a>
-    <a class="btn btn-secondary" href="{% url 'pedidos:saidas-por-produto' %}?{{ querystring }}">← Voltar</a>
+  <div class="row gap8">
+    <button class="btn primary" type="submit">Filtrar</button>
+    {% if tem_filtro %}
+      <a class="btn ghost" href="{% url 'pedidos:saidas-do-produto-detail' produto.id %}">Limpar filtros</a>
+    {% endif %}
   </div>
 </form>
 
-<div class="card">
-  <h3>Por pedido</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Pedido</th>
-        <th>Cliente</th>
-        <th>Data</th>
-        <th class="ta-right">Quantidade</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in rows %}
-      <tr>
-        <td>{{ r.pedido__numero }}</td>
-        <td>{{ r.pedido__nome_cliente }}</td>
-        <td>{{ r.pedido__criado_em|date:"Y-m-d H:i" }}</td>
-        <td class="ta-right">{{ r.total_pedido }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4">Nenhuma saída encontrada.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% if page_obj.has_other_pages %}
-  <div class="pagination">
-    {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">«</a>
-    {% endif %}
-    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}&{{ querystring }}">»</a>
-    {% endif %}
-  </div>
-  {% endif %}
-</div>
-
-<div class="card mt12">
-  <details>
-    <summary>Ver últimas linhas de movimentos (auditoria)</summary>
-    <table class="table mt8">
+<div class="card sem-padding">
+  <div class="tabela-wrap">
+    <table class="tabela">
       <thead>
         <tr>
-          <th>Quando</th>
           <th>Pedido</th>
-          <th>Quantidade</th>
+          <th>Cliente</th>
+          <th>Quando</th>
+          <th class="num">Quantidade</th>
         </tr>
       </thead>
       <tbody>
-        {% for m in linhas %}
-        <tr>
-          <td>{{ m.criado_em|date:"Y-m-d H:i" }}</td>
-          <td>{{ m.pedido.numero }} – {{ m.pedido.nome_cliente }}</td>
-          <td>{{ m.quantidade }}</td>
-        </tr>
+        {% for r in rows %}
+          <tr>
+            <td class="rel-numero">#{{ r.pedido__numero }}</td>
+            <td class="rel-produto">{{ r.pedido__nome_cliente }}</td>
+            <td class="rel-quando">{{ r.pedido__criado_em|date:"d/m/Y H:i" }}</td>
+            <td class="num rel-saiu">{{ r.total_pedido }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="tabela-vazia">
+              {% if tem_filtro %}
+                Nenhuma saída encontrada com esses filtros.
+              {% else %}
+                Este produto ainda não saiu em nenhum pedido.
+              {% endif %}
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
-  </details>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="paginacao">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Página anterior">«</a>
+      {% endif %}
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Próxima página">»</a>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>
+
+{% if linhas %}
+  <details class="card auditoria">
+    <summary>Movimentos linha a linha (auditoria)</summary>
+    <p class="rel-sub">Cada baixa registrada, sem agrupar por pedido. Últimas {{ linhas|length }}.</p>
+    <div class="tabela-wrap">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Quando</th>
+            <th>Pedido</th>
+            <th class="num">Qtd.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in linhas %}
+            <tr>
+              <td class="rel-quando">{{ m.criado_em|date:"d/m/Y H:i" }}</td>
+              <td>{% if m.pedido %}#{{ m.pedido.numero }} — {{ m.pedido.nome_cliente }}{% else %}<span class="rel-quando">pedido removido</span>{% endif %}</td>
+              <td class="num">{{ m.quantidade }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+{% endif %}
 {% endblock %}

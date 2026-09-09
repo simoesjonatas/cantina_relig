@@ -46,6 +46,7 @@ html, body { margin:0; padding:0; font-family: system-ui, -apple-system, Segoe U
 .form-group input[type="password"],
 .form-group input[type="number"],
 .form-group input[type="email"],
+.form-group input[type="date"],
 .form-group select {
   width: 100%;
   padding: 10px 12px;
@@ -71,7 +72,7 @@ html, body { margin:0; padding:0; font-family: system-ui, -apple-system, Segoe U
 
 .item-row { margin-bottom: 12px; }
 
-.btn { appearance: none; border: 1px solid var(--primary); background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+.btn { appearance: none; border: 1px solid var(--primary); background: var(--primary); color: #fff; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
 .btn.primary { background: var(--primary); border-color: var(--primary); }
 .btn:hover { background: var(--primary-700); border-color: var(--primary-700); }
 .btn.ghost { background: transparent; color: var(--primary); }
@@ -232,3 +233,55 @@ table th { color: var(--muted); font-weight: 600; }
 .nav-cta:active { transform: none; box-shadow: 0 2px 8px rgba(108, 92, 231, .25); }
 .nav-cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .nav-cta { transition: none; } .nav-cta:hover { transform: none; } }
+
+/* --- Relatórios de estoque --- */
+.rel-titulo { margin: 0 0 4px; }
+.rel-sub { margin: 0 0 20px; color: var(--muted); }
+
+.resumo { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.resumo-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 20px;
+}
+.resumo-rotulo { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.resumo-valor { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.filtros { margin-bottom: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 14px; }
+@media (max-width: 900px) { .grid4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .grid4 { grid-template-columns: 1fr; } }
+
+.card.sem-padding { padding: 0; overflow: hidden; }
+.tabela-wrap { overflow-x: auto; }
+.tabela { width: 100%; border-collapse: collapse; }
+.tabela th, .tabela td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+.tabela thead th {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--muted); font-weight: 700; white-space: nowrap;
+}
+.tabela tbody tr:last-child td { border-bottom: 0; }
+.tabela tbody tr:hover { background: #fafaff; }
+.tabela .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rel-produto { font-weight: 600; }
+.rel-saiu { font-size: 18px; font-weight: 700; }
+.tabela-vazia { text-align: center; color: var(--muted); padding: 36px 16px; }
+.btn-pequeno { padding: 6px 12px; font-size: 13px; font-weight: 600; }
+
+.paginacao {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 14px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted);
+}
+.paginacao a {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; height: 36px; border: 1px solid var(--border);
+  border-radius: 10px; color: var(--primary); text-decoration: none; font-weight: 700;
+}
+.paginacao a:hover { border-color: var(--primary); background: rgba(108, 92, 231, .06); }
+.rel-voltar { display: inline-block; margin-bottom: 12px; color: var(--muted); text-decoration: none; font-size: 14px; }
+.rel-voltar:hover { color: var(--primary); }
+.rel-numero { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; color: var(--muted); }
+.rel-quando { color: var(--muted); white-space: nowrap; }
+.auditoria { margin-top: 16px; }
+.auditoria summary { cursor: pointer; font-weight: 600; }
+.auditoria .tabela-wrap { margin: 0 -16px -16px; }
+.auditoria .rel-sub { margin: 10px 0 0; font-size: 13px; }

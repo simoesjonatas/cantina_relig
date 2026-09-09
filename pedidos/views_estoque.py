@@ -1,8 +1,11 @@
-# views.py
+# views_estoque.py
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Sum, Q
 from django.shortcuts import render, get_object_or_404
-from django.core.paginator import Paginator
+
 from .models import MovimentoEstoque, Produto
+
 
 def _aplicar_filtros(request, qs):
     """Reaproveita filtros nas duas telas."""
@@ -21,6 +24,15 @@ def _aplicar_filtros(request, qs):
         qs = qs.filter(pedido__numero=pedido)
     return qs
 
+
+def _querystring(request):
+    """Filtros atuais sem o 'page', já escapados (nomes com espaço/acento)."""
+    params = request.GET.copy()
+    params.pop("page", None)
+    return params.urlencode()
+
+
+@login_required
 def saidas_por_produto(request):
     """
     Lista agregada: total que saiu por produto no período.
@@ -28,9 +40,9 @@ def saidas_por_produto(request):
     qs = MovimentoEstoque.objects.filter(tipo=MovimentoEstoque.Tipo.SAIDA).select_related("produto")
     qs = _aplicar_filtros(request, qs)
 
-    # group by produto
+    # group by produto (traz o estoque atual junto, para comparar com o que saiu)
     agregados = (
-        qs.values("produto_id", "produto__nome")
+        qs.values("produto_id", "produto__nome", "produto__estoque")
           .annotate(total_saiu=Sum("quantidade"))
           .order_by("produto__nome")
     )
@@ -42,10 +54,15 @@ def saidas_por_produto(request):
     ctx = {
         "rows": page_obj,
         "page_obj": page_obj,
-        "querystring": "&".join([f"{k}={v}" for k, v in request.GET.items() if k != "page"]),
+        "querystring": _querystring(request),
+        "total_unidades": qs.aggregate(s=Sum("quantidade"))["s"] or 0,
+        "total_produtos": paginator.count,
+        "tem_filtro": any(request.GET.get(k) for k in ("de", "ate", "q", "pedido")),
     }
     return render(request, "estoque/saidas_por_produto.html", ctx)
 
+
+@login_required
 def saidas_do_produto_detail(request, produto_id):
     """
     Detalhe: ao clicar no produto, mostra por pedido quanto saiu.
@@ -65,7 +82,7 @@ def saidas_do_produto_detail(request, produto_id):
           .order_by("-pedido__criado_em")
     )
 
-    # (opcional) lista “linha a linha” para ver fragmentações/estornos
+    # (opcional) lista "linha a linha" para ver fragmentações/estornos
     linhas = qs.order_by("-criado_em")
 
     paginator = Paginator(por_pedido, 25)
@@ -76,6 +93,9 @@ def saidas_do_produto_detail(request, produto_id):
         "rows": page_obj,
         "linhas": linhas[:100],  # mostra até 100 últimas linhas como referência
         "page_obj": page_obj,
-        "querystring": "&".join([f"{k}={v}" for k, v in request.GET.items() if k != "page"]),
+        "querystring": _querystring(request),
+        "total_unidades": qs.aggregate(s=Sum("quantidade"))["s"] or 0,
+        "total_pedidos": paginator.count,
+        "tem_filtro": any(request.GET.get(k) for k in ("de", "ate", "q", "pedido")),
     }
     return render(request, "estoque/saidas_do_produto_detail.html", ctx)
