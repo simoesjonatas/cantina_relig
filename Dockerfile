@@ -1,18 +1,3 @@
-# # Dockerfile
-# FROM python:3.11-slim
-
-# ENV PYTHONDONTWRITEBYTECODE 1
-# ENV PYTHONUNBUFFERED 1
-
-# WORKDIR /app
-
-# COPY requirements.txt /app/
-# RUN pip install --upgrade pip && pip install -r requirements.txt
-
-# COPY . /app/
-
-# CMD ["gunicorn", "cantina.wsgi:application", "--bind", "0.0.0.0:8000"]
-
 # Dockerfile
 FROM python:3.11-slim
 
@@ -23,9 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt /app/
-RUN pip install --upgrade pip && pip install -r requirements.txt && pip install gunicorn
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app/
+RUN chmod +x /app/entrypoint.sh
 
-# roda migrações e collectstatic antes de subir o servidor
-CMD bash -lc "python manage.py migrate && (python manage.py collectstatic --noinput || true) && gunicorn cantina.wsgi:application --bind 0.0.0.0:8000"
+# O entrypoint roda migrate + collectstatic e só então entrega para o CMD.
+# Fica no ENTRYPOINT (e não no CMD) porque o "command:" do docker-compose
+# substitui o CMD — era por isso que o collectstatic não rodava em produção.
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["gunicorn", "cantina.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

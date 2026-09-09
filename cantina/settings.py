@@ -25,9 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--i19fa^my_!6z3tkuo3d!uk7)zhdbkj4ub34krwp12cr77bmk&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# O docker-compose define DJANGO_DEBUG=False; sem a variável, segue True (dev).
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip().lower() not in ("false", "0", "no")
 
 ALLOWED_HOSTS = ['*']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://relig.simoesti.com.br',
+]
 
 
 # Application definition
@@ -44,6 +49,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # serve os arquivos estáticos direto pelo Django, sem precisar de nginx
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -108,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -124,6 +131,16 @@ LOGOUT_REDIRECT_URL = "/"
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"         # coletados (collectstatic) vão aqui
 STATICFILES_DIRS = [BASE_DIR / "static"]       # seus arquivos de dev, se existir
+
+# Em produção o WhiteNoise comprime e versiona os arquivos (cache eterno no
+# navegador, sem servir arquivo velho). Em desenvolvimento fica o storage
+# simples: o manifesto só existe depois do collectstatic, e exigi-lo faria o
+# runserver quebrar a cada arquivo novo.
+if not DEBUG:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
