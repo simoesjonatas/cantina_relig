@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Pedidos{% endblock %}
+
+{% block content %}
+<div class="rel-cabecalho">
+  <div>
+    <h1 class="rel-titulo">Pedidos</h1>
+    <p class="rel-sub">Todos os pedidos{% if tem_filtro %} que batem com o filtro{% endif %}, do mais novo para o mais antigo.</p>
+  </div>
+  <a class="btn primary" href="{% url 'pedidos:criar' %}">+ Novo pedido</a>
+</div>
+
+<div class="resumo">
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Pedidos</span>
+    <span class="resumo-valor">{{ resumo.quantidade }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Faturamento</span>
+    <span class="resumo-valor">R$ {{ resumo.faturamento|default:0|floatformat:2 }}</span>
+  </div>
+</div>
+
+<form method="get" class="card filtros">
+  <div class="grid4">
+    <div class="form-group">
+      <label for="f-q">Nº ou cliente</label>
+      <input id="f-q" type="text" name="q" value="{{ busca }}" placeholder="ex: maria, 0012...">
+    </div>
+    <div class="form-group">
+      <label for="f-status">Status</label>
+      <select id="f-status" name="status">
+        <option value="">Todos</option>
+        {% for valor, rotulo in status_opcoes %}
+          <option value="{{ valor }}" {% if status == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="f-de">De</label>
+      <input id="f-de" type="date" name="de" value="{{ request.GET.de }}">
+    </div>
+    <div class="form-group">
+      <label for="f-ate">Até</label>
+      <input id="f-ate" type="date" name="ate" value="{{ request.GET.ate }}">
+    </div>
+  </div>
+  <div class="row gap8">
+    <button class="btn primary" type="submit">Filtrar</button>
+    {% if tem_filtro %}
+      <a class="btn ghost" href="{% url 'pedidos:lista' %}">Limpar filtros</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="card sem-padding">
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Nº</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th class="num">Itens</th>
+          <th class="num">Total</th>
+          <th class="num">Criado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+          <tr>
+            <td class="rel-numero">{{ p.numero }}</td>
+            <td class="rel-produto">
+              {{ p.nome_cliente }}
+              {% if p.observacao %}<span class="marca-obs" title="{{ p.observacao }}">obs</span>{% endif %}
+            </td>
+            <td><span class="status status-{{ p.status }}">{{ p.get_status_display }}</span></td>
+            <td class="num">{{ p.qtd_itens }}</td>
+            <td class="num"><b>R$ {{ p.total|floatformat:2 }}</b></td>
+            <td class="num rel-quando">{{ p.criado_em|date:"d/m/Y H:i" }}</td>
+            <td class="num">
+              <a class="btn ghost btn-pequeno" href="{% url 'pedidos:detalhe' p.pk %}">ver →</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="tabela-vazia">
+              {% if tem_filtro %}
+                Nenhum pedido encontrado com esses filtros.
+              {% else %}
+                Nenhum pedido registrado ainda.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <div class="paginacao">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Página anterior">«</a>
+      {% endif %}
+      <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" aria-label="Próxima página">»</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

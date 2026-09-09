@@ -15,34 +15,58 @@
         <img class="brand-simbolo" src="{% static 'relig-simbolo.svg' %}" alt="">
         RELIG
       </a>
-      <nav class="nav">
+
+      {% if user.is_authenticated %}
+        <button class="menu-botao" id="menuBotao" type="button"
+                aria-expanded="false" aria-controls="menuPrincipal" aria-label="Abrir menu">
+          <span></span><span></span><span></span>
+        </button>
+      {% endif %}
+
+      <nav class="nav" id="menuPrincipal">
         {% if user.is_authenticated %}
-          <a href="{% url 'pedidos:criar' %}">Novo Pedido</a>
-          {% comment %} <a href="{% url 'pedidos:criar' %}">Pedidos Pendendes</a> {% endcomment %}
-          <a href="{% url 'pedidos:cozinha' %}">Cozinha</a>
-          <a href="{% url 'pedidos:balcao' %}">Balcão</a>
-          <a href="{% url 'pedidos:painel' %}" target="_blank">Painel</a>
-          {% comment %} <a href="/admin/">Admin</a> {% endcomment %}
-        
-          <form method="post" action="{% url 'logout' %}" style="display:inline;">
+          {% url 'pedidos:criar' as u_criar %}
+          {% url 'pedidos:caixa_pendentes' as u_caixa %}
+          {% url 'pedidos:cozinha' as u_cozinha %}
+          {% url 'pedidos:balcao' as u_balcao %}
+          {% url 'pedidos:lista' as u_pedidos %}
+          {% url 'pedidos:produto_lista' as u_produtos %}
+          {% url 'pedidos:saidas-por-produto' as u_estoque %}
+
+          <span class="nav-grupo">Atendimento</span>
+          <a href="{{ u_criar }}" {% if request.path == u_criar %}class="ativo" aria-current="page"{% endif %}>Novo pedido</a>
+          <a href="{{ u_caixa }}" {% if request.path == u_caixa %}class="ativo" aria-current="page"{% endif %}>Caixa</a>
+          <a href="{{ u_cozinha }}" {% if request.path == u_cozinha %}class="ativo" aria-current="page"{% endif %}>Cozinha</a>
+          <a href="{{ u_balcao }}" {% if request.path == u_balcao %}class="ativo" aria-current="page"{% endif %}>Balcão</a>
+
+          <span class="nav-separador" aria-hidden="true"></span>
+
+          <span class="nav-grupo">Gestão</span>
+          <a href="{{ u_pedidos }}" {% if request.path == u_pedidos %}class="ativo" aria-current="page"{% endif %}>Pedidos</a>
+          <a href="{{ u_produtos }}" {% if request.path == u_produtos %}class="ativo" aria-current="page"{% endif %}>Produtos</a>
+          <a href="{{ u_estoque }}" {% if request.path == u_estoque %}class="ativo" aria-current="page"{% endif %}>Estoque</a>
+
+          <span class="nav-separador" aria-hidden="true"></span>
+
+          <a class="nav-externo" href="{% url 'pedidos:painel' %}" target="_blank" rel="noopener">
+            Painel <span aria-hidden="true">↗</span>
+          </a>
+
+          <form method="post" action="{% url 'logout' %}" class="nav-sair">
             {% csrf_token %}
-            <button type="submit" class="btn ghost">
-              Sair
-            </button>
+            <button type="submit" class="btn ghost">Sair</button>
           </form>
-          {% else%}
-            <a class="nav-cta" href="{% url 'pedidos:cliente_pedido_novo' %}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                <path d="M3 6h18"/>
-                <path d="M16 10a4 4 0 0 1-8 0"/>
-              </svg>
-              Faça seu pedido
-            </a>
+        {% else %}
+          <a class="nav-cta" href="{% url 'pedidos:cliente_pedido_novo' %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            Faça seu pedido
+          </a>
         {% endif %}
-
-
       </nav>
     </div>
   </header>
@@ -66,5 +90,31 @@
       <small>© {{ now|date:"Y" }} RELIG — simplicidade e sabor</small>
     </div>
   </footer>
+  <script>
+    // menu sanfona no celular
+    const menuBotao = document.getElementById('menuBotao');
+    const menuPrincipal = document.getElementById('menuPrincipal');
+    if (menuBotao && menuPrincipal) {
+      const alternar = (abrir) => {
+        menuPrincipal.classList.toggle('aberto', abrir);
+        menuBotao.setAttribute('aria-expanded', String(abrir));
+        menuBotao.setAttribute('aria-label', abrir ? 'Fechar menu' : 'Abrir menu');
+      };
+      menuBotao.addEventListener('click', () => {
+        alternar(!menuPrincipal.classList.contains('aberto'));
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && menuPrincipal.classList.contains('aberto')) {
+          alternar(false);
+          menuBotao.focus();
+        }
+      });
+      // clicar fora fecha
+      document.addEventListener('click', (e) => {
+        if (!menuPrincipal.classList.contains('aberto')) return;
+        if (!menuPrincipal.contains(e.target) && !menuBotao.contains(e.target)) alternar(false);
+      });
+    }
+  </script>
 </body>
 </html>

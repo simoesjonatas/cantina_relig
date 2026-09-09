@@ -13,7 +13,9 @@ from .services import (
     marcar_retirado, prontos_aguardando_retirada, JANELA_PRONTOS_MIN,
 )
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
+from django.core.paginator import Paginator
+from .utils import querystring_sem_pagina
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 
@@ -161,6 +163,47 @@ def balcao_dados(request):
     """Só os ids, para a tela saber quando precisa se atualizar."""
     ids = prontos_aguardando_retirada().order_by("finalizado_em").values_list("id", flat=True)
     return JsonResponse({"ids": list(ids)})
+
+
+@login_required
+def pedido_lista(request):
+    """Todos os pedidos, com busca e filtros — substitui o admin."""
+    base = Pedido.objects.all()
+
+    busca = request.GET.get("q", "").strip()
+    if busca:
+        base = base.filter(Q(numero__icontains=busca) | Q(nome_cliente__icontains=busca))
+
+    status = request.GET.get("status", "")
+    if status:
+        base = base.filter(status=status)
+
+    de = request.GET.get("de")
+    ate = request.GET.get("ate")
+    if de:
+        base = base.filter(criado_em__date__gte=de)
+    if ate:
+        base = base.filter(criado_em__date__lte=ate)
+
+    # o resumo sai da queryset sem annotate, senão o join dos itens duplicaria a soma
+    resumo = base.aggregate(
+        quantidade=Count("id"),
+        faturamento=Sum("total", filter=~Q(status=Pedido.Status.CANCELADO)),
+    )
+
+    pedidos = base.annotate(qtd_itens=Count("itens")).order_by("-criado_em")
+    page_obj = Paginator(pedidos, 25).get_page(request.GET.get("page"))
+
+    return render(request, "pedidos/lista.html", {
+        "page_obj": page_obj,
+        "pedidos": page_obj,
+        "resumo": resumo,
+        "busca": busca,
+        "status": status,
+        "status_opcoes": Pedido.Status.choices,
+        "querystring": querystring_sem_pagina(request),
+        "tem_filtro": bool(busca or status or de or ate),
+    })
 
 
 @login_required

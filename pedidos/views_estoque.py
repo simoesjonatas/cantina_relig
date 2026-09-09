@@ -5,6 +5,7 @@ from django.db.models import Sum, Q
 from django.shortcuts import render, get_object_or_404
 
 from .models import MovimentoEstoque, Produto
+from .utils import querystring_sem_pagina
 
 
 def _aplicar_filtros(request, qs):
@@ -23,13 +24,6 @@ def _aplicar_filtros(request, qs):
     if pedido:
         qs = qs.filter(pedido__numero=pedido)
     return qs
-
-
-def _querystring(request):
-    """Filtros atuais sem o 'page', já escapados (nomes com espaço/acento)."""
-    params = request.GET.copy()
-    params.pop("page", None)
-    return params.urlencode()
 
 
 @login_required
@@ -54,7 +48,7 @@ def saidas_por_produto(request):
     ctx = {
         "rows": page_obj,
         "page_obj": page_obj,
-        "querystring": _querystring(request),
+        "querystring": querystring_sem_pagina(request),
         "total_unidades": qs.aggregate(s=Sum("quantidade"))["s"] or 0,
         "total_produtos": paginator.count,
         "tem_filtro": any(request.GET.get(k) for k in ("de", "ate", "q", "pedido")),
@@ -93,7 +87,7 @@ def saidas_do_produto_detail(request, produto_id):
         "rows": page_obj,
         "linhas": linhas[:100],  # mostra até 100 últimas linhas como referência
         "page_obj": page_obj,
-        "querystring": _querystring(request),
+        "querystring": querystring_sem_pagina(request),
         "total_unidades": qs.aggregate(s=Sum("quantidade"))["s"] or 0,
         "total_pedidos": paginator.count,
         "tem_filtro": any(request.GET.get(k) for k in ("de", "ate", "q", "pedido")),

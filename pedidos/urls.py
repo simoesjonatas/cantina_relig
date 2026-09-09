@@ -9,6 +9,7 @@ app_name = "pedidos"
 
 urlpatterns = [
     path("novo/", views.criar_pedido, name="criar"),
+    path("", views.pedido_lista, name="lista"),
     path("<int:pk>/", views.detalhe_pedido, name="detalhe"),
     path("<int:pk>/confirmar/", views.confirmar_enviar, name="confirmar"),
     path("cozinha/", views.cozinha_painel, name="cozinha"),

@@ -18,12 +18,76 @@ html, body { margin:0; padding:0; font-family: system-ui, -apple-system, Segoe U
 .container { max-width: 980px; margin: 0 auto; padding: 20px; }
 
 .topbar { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top:0; z-index:10; }
-.topbar .wrap { display:flex; align-items:center; justify-content:space-between; }
+.topbar .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 20px; }
 .brand { font-weight: 800; font-size: 22px; color: var(--primary); text-decoration: none;
          display: inline-flex; align-items: center; gap: 10px; }
 .brand-simbolo { height: 30px; width: auto; display: block; }
-.nav a { margin-left: 16px; text-decoration: none; color: var(--text); }
-.nav a:hover { color: var(--primary); }
+
+.nav { display: flex; align-items: center; gap: 2px; }
+.nav a {
+  padding: 7px 11px; border-radius: 8px; font-size: 14px;
+  color: var(--text); text-decoration: none; white-space: nowrap;
+}
+.nav a:hover { background: rgba(108, 92, 231, .08); color: var(--primary); }
+.nav a.ativo { background: rgba(108, 92, 231, .12); color: var(--primary); font-weight: 700; }
+.nav-externo { color: var(--muted) !important; }
+.nav-externo:hover { color: var(--primary) !important; }
+.nav-separador { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
+.nav-grupo { display: none; }           /* rótulo só aparece no menu do celular */
+.nav-sair { margin-left: 8px; }
+.nav-sair .btn { padding: 7px 14px; font-size: 14px; }
+
+/* o botão do cliente não deve pegar o hover cinza dos links do menu */
+.nav a.nav-cta, .nav a.nav-cta:hover { color: #fff; }
+.nav a.nav-cta:hover { background: var(--primary-700); }
+
+/* botão sanfona (só no celular) */
+.menu-botao {
+  display: none; flex-direction: column; justify-content: center; gap: 5px;
+  width: 44px; height: 44px; padding: 0 11px;
+  background: none; border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+}
+.menu-botao span {
+  display: block; height: 2px; background: var(--text); border-radius: 2px;
+  transition: transform .25s ease, opacity .18s ease, background .2s ease;
+}
+.menu-botao { transition: border-color .2s ease, background .2s ease; }
+.menu-botao[aria-expanded="true"] { border-color: var(--primary); background: rgba(108, 92, 231, .06); }
+.menu-botao[aria-expanded="true"] span { background: var(--primary); }
+
+/* as três barras viram um X (7px = metade da barra + o gap) */
+.menu-botao[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.menu-botao[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(.2); }
+.menu-botao[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+@keyframes menu-abre {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-botao span, .menu-botao { transition: none; }
+  .nav.aberto { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .menu-botao { display: flex; }
+  .nav {
+    display: none; order: 3; width: 100%;
+    flex-direction: column; align-items: stretch; gap: 2px;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .nav.aberto { display: flex; animation: menu-abre .22s ease-out; }
+  .nav a { padding: 13px 12px; font-size: 16px; }
+  .nav-separador { display: none; }
+  .nav-grupo {
+    display: block; padding: 14px 12px 4px;
+    font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .nav-sair { margin: 10px 0 4px; }
+  .nav-sair .btn { width: 100%; padding: 13px; font-size: 16px; }
+}
 
 .footer { color: var(--muted); padding: 24px 0; text-align: center; }
 
@@ -318,3 +382,18 @@ table th { color: var(--muted); font-weight: 600; }
 
 .confirmacao { max-width: 560px; }
 .confirmacao-pergunta { font-size: 18px; margin: 0 0 6px; }
+
+/* --- Lista de pedidos: cor por status --- */
+.status {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.status-RASC { background: #eef0f5; color: #6b6b80; }   /* Rascunho */
+.status-AGPG { background: #fff6e5; color: #7a5300; }   /* Aguardando Pagamento */
+.status-ENVC { background: #eef2ff; color: #4338ca; }   /* Enviado à Cozinha */
+.status-CONC { background: #eaf8f0; color: #1e6a3a; }   /* Concluído */
+.status-CANC { background: #fdeaea; color: #7e1a15; }   /* Cancelado */
+.marca-obs {
+  margin-left: 6px; padding: 2px 6px; border-radius: 6px; cursor: help;
+  font-size: 11px; font-weight: 700; background: #fff8e8; color: #7a5300; border: 1px solid #ffe0a6;
+}
