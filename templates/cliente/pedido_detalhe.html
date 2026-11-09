@@ -3,6 +3,7 @@
 {% block title %}Pedido {{ pedido.numero }}{% endblock %}
 
 {% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:meus_pedidos' %}">← Meus pedidos</a>
 <h1>Pedido {{ pedido.numero }} — {{ pedido.nome_cliente }}</h1>
 
 {% if pedido.status == "RASC" %}
@@ -94,4 +95,7 @@
     {% endif %}
   </p>
 {% endif %}
+<div class="row gap8" style="margin-top:16px;">
+  <a class="btn ghost" href="{% url 'pedidos:cardapio' %}">Fazer outro pedido</a>
+</div>
 {% endblock %}

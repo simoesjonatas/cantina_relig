@@ -6,6 +6,8 @@ from decimal import Decimal
 from .models import Produto, Combo
 
 CHAVE = "carrinho"
+CHAVE_PEDIDOS = "meus_pedidos"
+LIMITE_HISTORICO = 20
 
 
 def _vazio():
@@ -101,3 +103,23 @@ def detalhar(sessao):
         ajustado = True
 
     return {"linhas": linhas, "total": total, "itens": sum(l["qtd"] for l in linhas), "ajustado": ajustado}
+
+
+# --- pedidos que esta pessoa fez ------------------------------------------
+# Sem login, a sessão é o que liga o cliente aos pedidos dele. Vale 14 dias
+# e sobrevive a fechar o navegador, então ele acha o pedido depois de um F5
+# ou de sair da página.
+
+def registrar_pedido(sessao, pedido_id):
+    ids = [i for i in sessao.get(CHAVE_PEDIDOS, []) if i != pedido_id]
+    ids.insert(0, pedido_id)
+    sessao[CHAVE_PEDIDOS] = ids[:LIMITE_HISTORICO]
+    sessao.modified = True
+
+
+def ids_dos_pedidos(sessao):
+    return sessao.get(CHAVE_PEDIDOS, [])
+
+
+def e_meu(sessao, pedido_id):
+    return pedido_id in sessao.get(CHAVE_PEDIDOS, [])

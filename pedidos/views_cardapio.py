@@ -94,11 +94,14 @@ def finalizar(request):
             messages.error(request, "Escolha se vai comer no local ou levar.")
         else:
             with transaction.atomic():
+                # já entra aguardando pagamento: quem clicou em "Enviar
+                # pedido" no cardápio já confirmou, e o rascunho só somava
+                # um clique a mais antes de ir ao caixa
                 pedido = Pedido.objects.create(
                     nome_cliente=nome,
                     consumo=consumo,
                     observacao=observacao,
-                    status=Pedido.Status.RASCUNHO,
+                    status=Pedido.Status.PAGAMENTO,
                 )
                 for l in resumo["linhas"]:
                     if l["tipo"] == "produtos":
@@ -113,7 +116,8 @@ def finalizar(request):
                         )
                 pedido.recalcular_total()
             cart.esvaziar(request.session)
-            return redirect("pedidos:cliente_pedido_detalhe", pk=pedido.pk)
+            cart.registrar_pedido(request.session, pedido.pk)
+            return redirect("pedidos:cliente_pedido_pagamento", pk=pedido.pk)
 
     return render(request, "cardapio/finalizar.html", {
         "resumo": resumo,
@@ -121,3 +125,20 @@ def finalizar(request):
         "nome_cliente": request.POST.get("nome_cliente", ""),
         "observacao": request.POST.get("observacao", ""),
     })
+
+
+def meus_pedidos(request):
+    """Os pedidos desta pessoa, pela sessão. Serve para ela acompanhar."""
+    ids = cart.ids_dos_pedidos(request.session)
+    encontrados = {
+        p.pk: p
+        for p in Pedido.objects.filter(pk__in=ids).prefetch_related("itens__produto", "combos__combo")
+    }
+    pedidos = [encontrados[i] for i in ids if i in encontrados]
+
+    # pedido apagado some da lista, senão fica um fantasma para sempre
+    if len(pedidos) != len(ids):
+        request.session[cart.CHAVE_PEDIDOS] = [p.pk for p in pedidos]
+        request.session.modified = True
+
+    return render(request, "cardapio/meus_pedidos.html", {"pedidos": pedidos})

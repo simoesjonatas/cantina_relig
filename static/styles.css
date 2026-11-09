@@ -656,3 +656,30 @@ table th { color: var(--muted); font-weight: 600; }
 }
 .cd-atalhos a:hover { border-color: var(--primary); color: var(--primary); }
 .cd-secao { scroll-margin-top: 80px; }
+
+/* --- Meus pedidos (cliente) --- */
+.nav-meus { position: relative; }
+.nav-meus b {
+  display: inline-block; min-width: 20px; padding: 1px 6px; margin-left: 2px;
+  border-radius: 999px; background: var(--primary); color: #fff; font-size: 12px; text-align: center;
+}
+.mp-lista { display: grid; gap: 12px; }
+.mp-card { display: block; text-decoration: none; color: var(--text); transition: border-color .15s ease; }
+.mp-card:hover { border-color: var(--primary); }
+.mp-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.mp-numero { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--muted); }
+.mp-itens { font-size: 15px; line-height: 1.4; }
+.mp-rodape { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.mp-rodape b { font-size: 17px; }
+.mp-aviso {
+  margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  background: #fff8e8; color: #7a5300; border: 1px solid #ffe0a6;
+}
+.mp-aviso.pronto { background: #eaf8f0; color: #1e6a3a; border-color: #caefd9; }
+.mp-acoes { margin-top: 16px; }
+@media (prefers-reduced-motion: reduce) { .mp-card { transition: none; } }
+.pg-aviso {
+  margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; line-height: 1.5;
+  background: #eaf8f0; border: 1px solid #caefd9; color: #1e6a3a;
+}
+.pg-aviso b { display: block; font-size: 17px; margin-bottom: 2px; }

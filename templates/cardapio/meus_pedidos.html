@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Meus pedidos{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:cardapio' %}">← Cardápio</a>
+<h1 class="rel-titulo">Meus pedidos</h1>
+
+{% if pedidos %}
+  <p class="rel-sub">Acompanhe por aqui. Atualiza sozinho a cada 20 segundos.</p>
+
+  <div class="mp-lista">
+    {% for p in pedidos %}
+      <a class="card mp-card" href="{% url 'pedidos:cliente_pedido_detalhe' p.pk %}">
+        <div class="mp-topo">
+          <span class="mp-numero">#{{ p.numero }}</span>
+          <span class="status status-{{ p.status }}">
+            {% if p.status == "ENVC" %}Em preparo
+            {% elif p.status == "CONC" %}Pronto!
+            {% else %}{{ p.get_status_display }}{% endif %}
+          </span>
+        </div>
+
+        <div class="mp-itens">
+          {% for pc in p.combos.all %}{{ pc.quantidade }}× {{ pc.combo.nome }}{% if not forloop.last or p.itens.all %} · {% endif %}{% endfor %}
+          {% for i in p.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        </div>
+
+        <div class="mp-rodape">
+          <span>
+            {% include "partials/tag_consumo.html" with pedido=p %}
+            <span class="rel-quando">{{ p.criado_em|date:"d/m H:i" }}</span>
+          </span>
+          <b>R$ {{ p.total|floatformat:2 }}</b>
+        </div>
+
+        {% if p.status == "AGPG" %}
+          <p class="mp-aviso">Vá ao caixa pagar — é só dizer seu nome.</p>
+        {% elif p.status == "CONC" %}
+          <p class="mp-aviso pronto">Pode retirar no balcão!</p>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="row gap8 mp-acoes">
+    <a class="btn primary" href="{% url 'pedidos:cardapio' %}">Fazer outro pedido</a>
+  </div>
+
+  <script>
+    // a pessoa deixa aberto esperando ficar pronto
+    setInterval(() => {
+      if (document.visibilityState === 'visible') location.reload();
+    }, 20000);
+  </script>
+{% else %}
+  <div class="card tabela-vazia">
+    Você ainda não fez nenhum pedido.
+    <a href="{% url 'pedidos:cardapio' %}">Ver o cardápio</a>.
+  </div>
+{% endif %}
+{% endblock %}

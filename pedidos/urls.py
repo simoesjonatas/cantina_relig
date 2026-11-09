@@ -65,6 +65,7 @@ urlpatterns = [
     path("cardapio/adicionar/", views_cardapio.cardapio_adicionar, name="cardapio_adicionar"),
     path("cardapio/carrinho/", views_cardapio.carrinho_ver, name="carrinho"),
     path("cardapio/finalizar/", views_cardapio.finalizar, name="cardapio_finalizar"),
+    path("cardapio/meus-pedidos/", views_cardapio.meus_pedidos, name="meus_pedidos"),
 
     # Cliente
     # Fluxo do cliente (sem login)
