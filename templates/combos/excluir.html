@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Excluir {{ combo.nome }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:combo_lista' %}">← Combos</a>
+<h1 class="rel-titulo">Excluir combo</h1>
+
+<div class="card confirmacao">
+  {% if em_pedidos %}
+    <div class="flash-item error">
+      <b>“{{ combo.nome }}” não pode ser excluído.</b>
+      Já foi vendido em {{ em_pedidos }} pedido(s), e apagá-lo apagaria esse histórico de vendas.
+    </div>
+    <p>Se saiu do cardápio, use <b>Desativar</b>: some da tela de pedidos e o histórico fica intacto.</p>
+    <div class="row gap8">
+      <form method="post" action="{% url 'pedidos:combo_alternar_ativo' combo.pk %}">
+        {% csrf_token %}
+        <button class="btn primary" type="submit">Desativar em vez de excluir</button>
+      </form>
+      <a class="btn ghost" href="{% url 'pedidos:combo_lista' %}">Voltar</a>
+    </div>
+  {% else %}
+    <p class="confirmacao-pergunta">Excluir <b>{{ combo.nome }}</b> (R$ {{ combo.preco|floatformat:2 }})?</p>
+    <p class="rel-sub">Nunca foi vendido. Os produtos dele continuam cadastrados; só o conjunto some.</p>
+    <form method="post" class="row gap8">
+      {% csrf_token %}
+      <button class="btn danger" type="submit">Sim, excluir</button>
+      <a class="btn ghost" href="{% url 'pedidos:combo_lista' %}">Cancelar</a>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

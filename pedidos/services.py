@@ -1,5 +1,6 @@
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum
+from collections import defaultdict
 from django.core.exceptions import ValidationError
 from .models import Pedido, Produto, MovimentoEstoque, ComandaCozinha
 from django.utils import timezone
@@ -44,28 +45,44 @@ def concluir_pedido(pedido_id: int) -> Pedido:
     return pedido
 
 
+def _consumo_por_produto(pedido):
+    """
+    Quanto cada produto sai neste pedido, somando itens avulsos e o conteúdo
+    dos combos. Precisa ser somado: o mesmo produto pode estar solto e dentro
+    de um combo, e conferir separado deixaria vender mais do que há no estoque.
+    """
+    necessidade = defaultdict(int)
+    for item in pedido.itens.all():
+        necessidade[item.produto_id] += item.quantidade
+    for pc in pedido.combos.all():
+        for ci in pc.combo.itens.all():
+            necessidade[ci.produto_id] += ci.quantidade * pc.quantidade
+    return necessidade
+
+
 @transaction.atomic
 def confirmar_pedido(pedido_id: int) -> Pedido:
     pedido = (
         Pedido.objects.select_for_update()
         .select_related()
-        .prefetch_related("itens__produto")
+        .prefetch_related("itens__produto", "combos__combo__itens__produto")
         .get(pk=pedido_id)
     )
 
-    if not pedido.itens.exists():
+    if not pedido.itens.exists() and not pedido.combos.exists():
         raise ValidationError("Pedido sem itens.")
 
-    # trava produtos e confere estoque
-    for item in pedido.itens.all():
-        produto = Produto.objects.select_for_update().get(pk=item.produto_id)
-        if item.quantidade > produto.estoque:
+    # confere o estoque somando avulsos + combos, com os produtos travados
+    necessidade = _consumo_por_produto(pedido)
+    for produto_id, quantidade in necessidade.items():
+        produto = Produto.objects.select_for_update().get(pk=produto_id)
+        if quantidade > produto.estoque:
             raise ValidationError(
                 f"Estoque insuficiente para {produto.nome}: "
-                f"solicitado {item.quantidade}, disponível {produto.estoque}."
+                f"solicitado {quantidade}, disponível {produto.estoque}."
             )
 
-    # baixa de estoque
+    # baixa dos itens avulsos (guarda o vínculo com a linha do pedido)
     for item in pedido.itens.all():
         produto = Produto.objects.select_for_update().get(pk=item.produto_id)
         produto.estoque = F("estoque") - item.quantidade
@@ -77,6 +94,21 @@ def confirmar_pedido(pedido_id: int) -> Pedido:
             tipo=MovimentoEstoque.Tipo.SAIDA,
             quantidade=item.quantidade,
         )
+
+    # baixa do conteúdo dos combos
+    for pc in pedido.combos.all():
+        for ci in pc.combo.itens.all():
+            quantidade = ci.quantidade * pc.quantidade
+            produto = Produto.objects.select_for_update().get(pk=ci.produto_id)
+            produto.estoque = F("estoque") - quantidade
+            produto.save(update_fields=["estoque"])
+            MovimentoEstoque.objects.create(
+                produto=produto,
+                pedido=pedido,
+                item=None,
+                tipo=MovimentoEstoque.Tipo.SAIDA,
+                quantidade=quantidade,
+            )
 
     pedido.recalcular_total()
     pedido.status = Pedido.Status.ENVIADO_COZINHA

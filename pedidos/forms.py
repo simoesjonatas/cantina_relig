@@ -3,7 +3,7 @@ from django.forms import ModelForm, inlineformset_factory
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Pedido, PedidoItem, Produto
+from .models import Pedido, PedidoItem, Produto, Combo, ComboItem, PedidoCombo
 
 class PedidoForm(ModelForm):
     class Meta:
@@ -55,6 +55,14 @@ class PedidoItemForm(ModelForm):
         # produto desativado não deve aparecer para quem monta o pedido
         self.fields["produto"].queryset = Produto.objects.filter(ativo=True)
 
+    def has_changed(self):
+        # a quantidade já vem com 1 na tela, o que faria o Django tratar uma
+        # linha em branco como preenchida e exigir o produto — isso impedia
+        # fechar um pedido que só tem combo
+        if not self.instance.pk and not self.data.get(self.add_prefix("produto")):
+            return False
+        return super().has_changed()
+
 PedidoItemFormSet = inlineformset_factory(
     Pedido, PedidoItem, form=PedidoItemForm, extra=1, can_delete=True
 )
@@ -103,3 +111,56 @@ class UsuarioEditarForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["first_name"].required = True
+
+
+class ComboForm(ModelForm):
+    class Meta:
+        model = Combo
+        fields = ["nome", "preco", "ativo"]
+        labels = {
+            "nome": "Nome do combo",
+            "preco": "Preço do combo (R$)",
+            "ativo": "Disponível para venda",
+        }
+        widgets = {
+            "nome": forms.TextInput(attrs={"placeholder": "ex: Combo Bacon"}),
+            "preco": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def clean_preco(self):
+        preco = self.cleaned_data["preco"]
+        if preco < 0:
+            raise forms.ValidationError("O preço não pode ser negativo.")
+        return preco
+
+
+class ComboItemForm(ModelForm):
+    class Meta:
+        model = ComboItem
+        fields = ["produto", "quantidade"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["produto"].queryset = Produto.objects.filter(ativo=True)
+
+
+ComboItemFormSet = inlineformset_factory(
+    Combo, ComboItem, form=ComboItemForm, extra=1, can_delete=True, min_num=1, validate_min=True
+)
+
+
+class PedidoComboForm(ModelForm):
+    class Meta:
+        model = PedidoCombo
+        fields = ["combo", "quantidade"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["combo"].queryset = Combo.objects.filter(ativo=True).prefetch_related("itens")
+        self.fields["combo"].required = False
+        self.fields["quantidade"].required = False
+
+
+PedidoComboFormSet = inlineformset_factory(
+    Pedido, PedidoCombo, form=PedidoComboForm, extra=0, can_delete=True
+)

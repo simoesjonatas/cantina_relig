@@ -49,6 +49,15 @@
               <span class="k-prod">{{ item.produto.nome }}</span>
             </li>
           {% endfor %}
+          {% for pc in comanda.pedido.combos.all %}
+            <li class="k-combo">
+              <span class="k-qtd">{{ pc.quantidade }}×</span>
+              <span class="k-prod">
+                <b>{{ pc.combo.nome }}</b>
+                <small>{% for i in pc.combo.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+              </span>
+            </li>
+          {% endfor %}
         </ul>
 
         <form method="post" action="{% url 'pedidos:concluir' comanda.pedido.pk %}" class="row end" style="margin-top:10px;">

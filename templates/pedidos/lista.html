@@ -77,7 +77,7 @@
               {% if p.observacao %}<span class="marca-obs" title="{{ p.observacao }}">obs</span>{% endif %}
             </td>
             <td><span class="status status-{{ p.status }}">{{ p.get_status_display }}</span></td>
-            <td class="num">{{ p.qtd_itens }}</td>
+            <td class="num">{{ p.qtd_itens }}{% if p.qtd_combos %} <span class="marca-combo" title="inclui combo">+{{ p.qtd_combos }} combo{{ p.qtd_combos|pluralize }}</span>{% endif %}</td>
             <td class="num"><b>R$ {{ p.total|floatformat:2 }}</b></td>
             <td class="num rel-quando">{{ p.criado_em|date:"d/m/Y H:i" }}</td>
             <td class="num">

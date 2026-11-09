@@ -4,6 +4,7 @@ from . import views_estoque
 from . import views_cliente
 from . import views_painel
 from . import views_produtos
+from . import views_combos
 from . import views_usuarios
 
 app_name = "pedidos"
@@ -33,6 +34,13 @@ urlpatterns = [
     path("usuarios/<int:pk>/senha/", views_usuarios.usuario_senha, name="usuario_senha"),
     path("usuarios/<int:pk>/acesso/", views_usuarios.usuario_alternar_ativo, name="usuario_alternar_ativo"),
     path("usuarios/<int:pk>/excluir/", views_usuarios.usuario_excluir, name="usuario_excluir"),
+
+    # Combos
+    path("combos/", views_combos.combo_lista, name="combo_lista"),
+    path("combos/novo/", views_combos.combo_criar, name="combo_criar"),
+    path("combos/<int:pk>/editar/", views_combos.combo_editar, name="combo_editar"),
+    path("combos/<int:pk>/situacao/", views_combos.combo_alternar_ativo, name="combo_alternar_ativo"),
+    path("combos/<int:pk>/excluir/", views_combos.combo_excluir, name="combo_excluir"),
 
     # Produtos (CRUD próprio, fora do admin)
     path("produtos/", views_produtos.produto_lista, name="produto_lista"),

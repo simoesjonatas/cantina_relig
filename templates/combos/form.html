@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}{% if combo %}Editar {{ combo.nome }}{% else %}Novo combo{% endif %}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:combo_lista' %}">← Combos</a>
+
+<h1 class="rel-titulo">{% if combo %}Editar combo{% else %}Novo combo{% endif %}</h1>
+<p class="rel-sub">Escolha os produtos que entram e o preço fechado do conjunto.</p>
+
+<form method="post" class="card" id="comboForm">
+  {% csrf_token %}
+
+  {% for erro in form.non_field_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+
+  <div class="grid2">
+    <div class="form-group">
+      <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+      {{ form.nome }}
+      {% for erro in form.nome.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label for="{{ form.preco.id_for_label }}">{{ form.preco.label }}</label>
+      {{ form.preco }}
+      {% for erro in form.preco.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+  </div>
+
+  <label class="checkbox-linha" style="margin-top:4px;">
+    {{ form.ativo }}
+    <span>
+      <b>{{ form.ativo.label }}</b>
+      <small>Desmarcado, some da tela de montar pedido — mas o histórico continua.</small>
+    </span>
+  </label>
+
+  <hr>
+
+  <h2 class="mb8">O que vem no combo</h2>
+  {% for erro in formset.non_form_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+  {{ formset.management_form }}
+
+  <div id="itensCombo">
+    {% for f in formset %}
+      <div class="combo-linha item-row">
+        {{ f.id }}
+        <div class="form-group">
+          <label for="{{ f.produto.id_for_label }}">Produto</label>
+          {{ f.produto }}
+          {% for erro in f.produto.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ f.quantidade.id_for_label }}">Quantidade</label>
+          {{ f.quantidade }}
+          {% for erro in f.quantidade.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        {% if formset.can_delete %}
+          <label class="combo-remover">{{ f.DELETE }} remover</label>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="row gap8" style="margin-top:12px;">
+    <button type="button" class="btn ghost" id="addItem">+ Adicionar produto</button>
+  </div>
+
+  <div class="combo-previa" id="previa" hidden>
+    Somando avulso: <b id="previaAvulso">R$ 0,00</b>
+    · <span id="previaDiferenca"></span>
+  </div>
+
+  <hr>
+
+  <div class="row gap8">
+    <button class="btn primary" type="submit">{% if combo %}Salvar alterações{% else %}Criar combo{% endif %}</button>
+    <a class="btn ghost" href="{% url 'pedidos:combo_lista' %}">Cancelar</a>
+  </div>
+</form>
+
+{{ precos|json_script:"precos" }}
+<script>
+  // --- adicionar linha, clonando a última ---
+  const container = document.getElementById('itensCombo');
+  const total = document.querySelector('[name$="-TOTAL_FORMS"]');
+
+  document.getElementById('addItem').addEventListener('click', () => {
+    const n = parseInt(total.value, 10);
+    const molde = container.querySelector('.combo-linha');
+    const nova = molde.cloneNode(true);
+    nova.querySelectorAll('input, select, label').forEach(el => {
+      ['name', 'id', 'for'].forEach(attr => {
+        const v = el.getAttribute(attr);
+        if (v) el.setAttribute(attr, v.replace(/-\d+-/, `-${n}-`));
+      });
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      if (el.type === 'number') el.value = 1;
+      if (el.type === 'checkbox') el.checked = false;
+      if (el.type === 'hidden' && /-id$/.test(el.name || '')) el.value = '';
+    });
+    container.appendChild(nova);
+    total.value = n + 1;
+    atualizarPrevia();
+  });
+
+  // --- prévia: quanto custaria avulso ---
+  const precos = JSON.parse(document.getElementById('precos').textContent);
+  const previa = document.getElementById('previa');
+  const campoPreco = document.getElementById('{{ form.preco.id_for_label }}');
+
+  function atualizarPrevia() {
+    let avulso = 0;
+    container.querySelectorAll('.combo-linha').forEach(linha => {
+      const del = linha.querySelector('input[type=checkbox]');
+      if (del && del.checked) return;
+      const sel = linha.querySelector('select');
+      const qtd = parseInt(linha.querySelector('input[type=number]')?.value || 0, 10);
+      const preco = precos[sel?.value];
+      if (preco && qtd > 0) avulso += preco * qtd;
+    });
+    if (!avulso) { previa.hidden = true; return; }
+    previa.hidden = false;
+    const fmt = (v) => 'R$ ' + v.toFixed(2).replace('.', ',');
+    document.getElementById('previaAvulso').textContent = fmt(avulso);
+
+    const combo = parseFloat(campoPreco.value || 0);
+    const dif = document.getElementById('previaDiferenca');
+    if (!combo) { dif.textContent = 'defina o preço do combo'; dif.className = ''; }
+    else if (combo < avulso) { dif.textContent = 'o cliente economiza ' + fmt(avulso - combo); dif.className = 'previa-ok'; }
+    else if (combo > avulso) { dif.textContent = 'atenção: o combo está ' + fmt(combo - avulso) + ' mais caro que avulso'; dif.className = 'previa-alerta'; }
+    else { dif.textContent = 'mesmo preço do avulso'; dif.className = 'previa-alerta'; }
+  }
+
+  document.getElementById('comboForm').addEventListener('input', atualizarPrevia);
+  document.getElementById('comboForm').addEventListener('change', atualizarPrevia);
+  atualizarPrevia();
+</script>
+{% endblock %}

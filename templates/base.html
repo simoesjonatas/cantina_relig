@@ -31,6 +31,7 @@
           {% url 'pedidos:balcao' as u_balcao %}
           {% url 'pedidos:lista' as u_pedidos %}
           {% url 'pedidos:produto_lista' as u_produtos %}
+          {% url 'pedidos:combo_lista' as u_combos %}
           {% url 'pedidos:saidas-por-produto' as u_estoque %}
 
           <span class="nav-grupo">Atendimento</span>
@@ -44,6 +45,7 @@
           <span class="nav-grupo">Gestão</span>
           <a href="{{ u_pedidos }}" {% if request.path == u_pedidos %}class="ativo" aria-current="page"{% endif %}>Pedidos</a>
           <a href="{{ u_produtos }}" {% if request.path == u_produtos %}class="ativo" aria-current="page"{% endif %}>Produtos</a>
+          <a href="{{ u_combos }}" {% if request.path == u_combos %}class="ativo" aria-current="page"{% endif %}>Combos</a>
           <a href="{{ u_estoque }}" {% if request.path == u_estoque %}class="ativo" aria-current="page"{% endif %}>Estoque</a>
           {% if user.is_staff %}
             {% url 'pedidos:usuario_lista' as u_usuarios %}

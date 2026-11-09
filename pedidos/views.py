@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import ModelForm, inlineformset_factory
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from .models import Pedido, PedidoItem, Produto, ComandaCozinha
-from .forms import PedidoForm, PedidoItemForm, PedidoItemFormSet
+from .models import Pedido, PedidoItem, Produto, ComandaCozinha, Combo
+from .forms import PedidoForm, PedidoItemForm, PedidoItemFormSet, PedidoComboFormSet
 from decimal import Decimal
 from django.views.decorators.http import require_POST
 from .services import (
@@ -47,21 +47,17 @@ def concluir_pedido_view(request, pk):
     return redirect("pedidos:detalhe", pk=pk)
 
 
+def _combos_disponiveis():
+    """Combos que dá para vender agora (ativos e com estoque de todos os itens)."""
+    combos = Combo.objects.filter(ativo=True).prefetch_related("itens__produto")
+    return [c for c in combos if c.itens.exists()]
+
+
 def detalhe_pedido(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
 
-    itens_ctx = []
-    total = Decimal("0.00")
-
-    for it in pedido.itens.select_related("produto"):
-        subtotal = it.preco_unitario * it.quantidade
-        itens_ctx.append({
-            "nome": it.produto.nome,
-            "qtd": it.quantidade,
-            "unit": it.preco_unitario,
-            "subtotal": subtotal,
-        })
-        total += subtotal
+    itens_ctx = pedido.linhas()
+    total = sum((l["subtotal"] for l in itens_ctx), Decimal("0.00"))
 
     # se por algum motivo o total estiver divergente, ajusta
     if pedido.total != total:
@@ -81,15 +77,22 @@ def criar_pedido(request):
     if request.method == "POST":
         form = PedidoForm(request.POST)
         formset = PedidoItemFormSet(request.POST)
-        if form.is_valid() and formset.is_valid():
+        formset_combos = PedidoComboFormSet(request.POST)
+        if form.is_valid() and formset.is_valid() and formset_combos.is_valid():
             pedido = form.save()
-            formset.instance = pedido
-            itens = formset.save(commit=False)
 
-            for it in itens:
+            formset.instance = pedido
+            for it in formset.save(commit=False):
                 it.preco_unitario = it.produto.preco  # sempre do produto
                 it.save()
             formset.save_m2m()
+
+            formset_combos.instance = pedido
+            for pc in formset_combos.save(commit=False):
+                if not pc.combo_id or not pc.quantidade:
+                    continue
+                pc.preco_unitario = pc.combo.preco  # congela o preço da venda
+                pc.save()
 
             # 🔑 já calcula o total agora (antes mesmo de confirmar)
             pedido.recalcular_total()
@@ -99,11 +102,13 @@ def criar_pedido(request):
     else:
         form = PedidoForm()
         formset = PedidoItemFormSet()
+        formset_combos = PedidoComboFormSet()
 
     # mapa para exibir preço automático no front
     preco_map = {p.id: float(p.preco) for p in Produto.objects.all()}
     return render(request, "pedidos/criar_pedido.html", {
-        "form": form, "formset": formset, "preco_map": preco_map
+        "form": form, "formset": formset, "formset_combos": formset_combos,
+        "preco_map": preco_map, "combos": _combos_disponiveis(),
     })
 
 
@@ -191,7 +196,10 @@ def pedido_lista(request):
         faturamento=Sum("total", filter=~Q(status=Pedido.Status.CANCELADO)),
     )
 
-    pedidos = base.annotate(qtd_itens=Count("itens")).order_by("-criado_em")
+    pedidos = base.annotate(
+        qtd_itens=Count("itens", distinct=True),
+        qtd_combos=Count("combos", distinct=True),
+    ).order_by("-criado_em")
     page_obj = Paginator(pedidos, 25).get_page(request.GET.get("page"))
 
     return render(request, "pedidos/lista.html", {
@@ -260,18 +268,8 @@ def caixa_buscar_pedido(request):
         return redirect("pedidos:caixa_pendentes")
     
 
-    itens_ctx = []
-    total = Decimal("0.00")
-
-    for it in pedido.itens.select_related("produto"):
-        subtotal = it.preco_unitario * it.quantidade
-        itens_ctx.append({
-            "nome": it.produto.nome,
-            "qtd": it.quantidade,
-            "unit": it.preco_unitario,
-            "subtotal": subtotal,
-        })
-        total += subtotal
+    itens_ctx = pedido.linhas()
+    total = sum((l["subtotal"] for l in itens_ctx), Decimal("0.00"))
 
     # se por algum motivo o total estiver divergente, ajusta
     if pedido.total != total:

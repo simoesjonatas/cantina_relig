@@ -123,6 +123,39 @@
     <button type="button" class="btn" id="btnAdd">+ Adicionar item</button>
     <button type="submit" class="btn primary">Salvar Rascunho</button>
   </div>
+
+  {% if combos %}
+    <h2 class="mb8" style="margin-top:20px;">Combos</h2>
+    {{ formset_combos.management_form }}
+    <div class="combo-oferta">
+      {% for c in combos %}
+        <label class="combo-escolha {% if not c.quantos_cabem %}esgotado{% endif %}">
+          <input type="checkbox" class="combo-check" data-combo="{{ c.id }}"
+                 {% if not c.quantos_cabem %}disabled{% endif %}>
+          <span class="combo-escolha-corpo">
+            <span class="combo-escolha-topo">
+              <b>{{ c.nome }}</b>
+              <span class="combo-escolha-preco">R$ {{ c.preco|floatformat:2 }}</span>
+            </span>
+            <small>{% for i in c.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+            {% if c.quantos_cabem %}
+              {% if c.economia > 0 %}<span class="combo-economia">economiza R$ {{ c.economia|floatformat:2 }}</span>{% endif %}
+            {% else %}
+              <span class="tag tag-bloqueado">Sem estoque</span>
+            {% endif %}
+            <span class="combo-qtd" hidden>
+              <button type="button" class="qty-btn" data-passo="-1">−</button>
+              <input type="number" class="qty-input combo-qtd-input" value="1" min="1"
+                     {% if c.quantos_cabem %}max="{{ c.quantos_cabem }}"{% endif %}>
+              <button type="button" class="qty-btn" data-passo="1">+</button>
+            </span>
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+    <div id="combosOcultos"></div>
+  {% endif %}
+
 </form>
 
 <script>
@@ -253,6 +286,61 @@
     // run inicial
     enhanceAllQuantidades();
 
+  })();
+</script>
+
+
+<script>
+  // --- combos: o checkbox vira uma linha do formset ---
+  (function () {
+    const ocultos = document.getElementById('combosOcultos');
+    if (!ocultos) return;
+    const total = document.querySelector('[name="combos-TOTAL_FORMS"]');
+
+    function regravar() {
+      ocultos.replaceChildren();
+      let n = 0;
+      document.querySelectorAll('.combo-check').forEach(chk => {
+        if (!chk.checked) return;
+        const qtd = chk.closest('.combo-escolha').querySelector('.combo-qtd-input').value || 1;
+        [['combo', chk.dataset.combo], ['quantidade', qtd], ['id', '']].forEach(([campo, valor]) => {
+          const i = document.createElement('input');
+          i.type = 'hidden';
+          i.name = `combos-${n}-${campo}`;
+          i.value = valor;
+          ocultos.appendChild(i);
+        });
+        n++;
+      });
+      total.value = n;
+    }
+
+    document.querySelectorAll('.combo-escolha').forEach(cartao => {
+      const chk = cartao.querySelector('.combo-check');
+      const caixaQtd = cartao.querySelector('.combo-qtd');
+      const campo = cartao.querySelector('.combo-qtd-input');
+
+      chk.addEventListener('change', () => {
+        caixaQtd.hidden = !chk.checked;
+        cartao.classList.toggle('escolhido', chk.checked);
+        regravar();
+      });
+
+      cartao.querySelectorAll('.qty-btn').forEach(b => {
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          const max = parseInt(campo.max || '999', 10);
+          const novo = parseInt(campo.value || 1, 10) + parseInt(b.dataset.passo, 10);
+          campo.value = Math.min(Math.max(novo, 1), max);
+          regravar();
+        });
+      });
+      campo.addEventListener('input', regravar);
+      // o label inteiro é clicável; não deixa o clique nos botões marcar/desmarcar
+      caixaQtd.addEventListener('click', (e) => e.preventDefault());
+    });
+
+    regravar();
   })();
 </script>
 

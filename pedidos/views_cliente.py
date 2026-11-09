@@ -1,24 +1,32 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import PedidoForm, PedidoItemFormSet
+from .forms import PedidoForm, PedidoItemFormSet, PedidoComboFormSet
 from decimal import Decimal
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Pedido
+from .views import _combos_disponiveis
 
 def pedido_novo_cliente(request):
     if request.method == "POST":
         form = PedidoForm(request.POST)
         formset = PedidoItemFormSet(request.POST)
-        if form.is_valid() and formset.is_valid():
+        formset_combos = PedidoComboFormSet(request.POST)
+        if form.is_valid() and formset.is_valid() and formset_combos.is_valid():
             pedido = form.save(commit=False)
             pedido.status = Pedido.Status.RASCUNHO  # cliente sempre começa em RASC
             pedido.save()
 
             formset.instance = pedido
-            itens = formset.save(commit=False)
-            for it in itens:
+            for it in formset.save(commit=False):
                 it.preco_unitario = it.produto.preco
                 it.save()
+
+            formset_combos.instance = pedido
+            for pc in formset_combos.save(commit=False):
+                if not pc.combo_id or not pc.quantidade:
+                    continue
+                pc.preco_unitario = pc.combo.preco
+                pc.save()
 
             pedido.recalcular_total()
 
@@ -26,27 +34,20 @@ def pedido_novo_cliente(request):
     else:
         form = PedidoForm()
         formset = PedidoItemFormSet()
+        formset_combos = PedidoComboFormSet()
 
     return render(request, "cliente/pedido_novo.html", {
         "form": form,
-        "formset": formset
+        "formset": formset,
+        "formset_combos": formset_combos,
+        "combos": _combos_disponiveis(),
     })
 
 def pedido_cliente_detalhe(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
 
-    itens_ctx = []
-    total = Decimal("0.00")
-
-    for it in pedido.itens.select_related("produto"):
-        subtotal = it.preco_unitario * it.quantidade
-        itens_ctx.append({
-            "nome": it.produto.nome,
-            "qtd": it.quantidade,
-            "unit": it.preco_unitario,
-            "subtotal": subtotal,
-        })
-        total += subtotal
+    itens_ctx = pedido.linhas()
+    total = sum((l["subtotal"] for l in itens_ctx), Decimal("0.00"))
 
     # se por algum motivo o total estiver divergente, ajusta
     if pedido.total != total:
@@ -82,18 +83,8 @@ def pedido_cliente_pagamento(request, pk):
     if pedido.status != Pedido.Status.PAGAMENTO:
         return redirect("pedidos:cliente_pedido_detalhe", pk=pk)
 
-    itens_ctx = []
-    total = Decimal("0.00")
-
-    for it in pedido.itens.select_related("produto"):
-        subtotal = it.preco_unitario * it.quantidade
-        itens_ctx.append({
-            "nome": it.produto.nome,
-            "qtd": it.quantidade,
-            "unit": it.preco_unitario,
-            "subtotal": subtotal,
-        })
-        total += subtotal
+    itens_ctx = pedido.linhas()
+    total = sum((l["subtotal"] for l in itens_ctx), Decimal("0.00"))
 
     # se por algum motivo o total estiver divergente, ajusta
     if pedido.total != total:

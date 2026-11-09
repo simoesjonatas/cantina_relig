@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Combos{% endblock %}
+
+{% block content %}
+<div class="rel-cabecalho">
+  <div>
+    <h1 class="rel-titulo">Combos</h1>
+    <p class="rel-sub">Conjuntos de produtos vendidos por um preço fechado.</p>
+  </div>
+  <a class="btn primary" href="{% url 'pedidos:combo_criar' %}">+ Novo combo</a>
+</div>
+
+<div class="resumo">
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Cadastrados</span>
+    <span class="resumo-valor">{{ resumo.total }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">À venda</span>
+    <span class="resumo-valor">{{ resumo.ativos }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Sem estoque</span>
+    <span class="resumo-valor {% if resumo.sem_estoque %}alerta{% endif %}">{{ resumo.sem_estoque }}</span>
+  </div>
+</div>
+
+<form method="get" class="card filtros">
+  <div class="grid2">
+    <div class="form-group">
+      <label for="f-q">Buscar</label>
+      <input id="f-q" type="text" name="q" value="{{ busca }}" placeholder="nome do combo">
+    </div>
+  </div>
+  <div class="row gap8">
+    <button class="btn primary" type="submit">Buscar</button>
+    {% if busca %}<a class="btn ghost" href="{% url 'pedidos:combo_lista' %}">Limpar</a>{% endif %}
+  </div>
+</form>
+
+{% if combos %}
+  <div class="combo-grade">
+    {% for c in combos %}
+      <article class="card combo-card {% if not c.ativo %}inativo{% endif %}">
+        <header class="combo-topo">
+          <div>
+            <h2 class="combo-nome">{{ c.nome }}</h2>
+            {% if c.ativo %}
+              {% if c.quantos_cabem %}
+                <span class="tag tag-ok">Dá para montar {{ c.quantos_cabem }}</span>
+              {% else %}
+                <span class="tag tag-bloqueado">Sem estoque</span>
+              {% endif %}
+            {% else %}
+              <span class="tag">Desativado</span>
+            {% endif %}
+          </div>
+          <div class="combo-preco">
+            <strong>R$ {{ c.preco|floatformat:2 }}</strong>
+            {% if c.economia > 0 %}
+              <small>avulso R$ {{ c.preco_avulso|floatformat:2 }}</small>
+              <span class="combo-economia">economiza R$ {{ c.economia|floatformat:2 }}</span>
+            {% elif c.economia < 0 %}
+              <small class="combo-alerta">mais caro que avulso (R$ {{ c.preco_avulso|floatformat:2 }})</small>
+            {% endif %}
+          </div>
+        </header>
+
+        <ul class="combo-itens">
+          {% for i in c.itens.all %}
+            <li><b>{{ i.quantidade }}×</b> {{ i.produto.nome }}
+              <span class="combo-estoque {% if not i.produto.estoque %}zero{% endif %}">{{ i.produto.estoque }} em estoque</span>
+            </li>
+          {% empty %}
+            <li class="combo-vazio">Combo sem produtos — edite para adicionar.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="acoes combo-acoes">
+          <a class="btn ghost btn-pequeno" href="{% url 'pedidos:combo_editar' c.pk %}">Editar</a>
+          <form method="post" action="{% url 'pedidos:combo_alternar_ativo' c.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn ghost btn-pequeno">{% if c.ativo %}Desativar{% else %}Ativar{% endif %}</button>
+          </form>
+          <a class="btn ghost btn-pequeno perigo" href="{% url 'pedidos:combo_excluir' c.pk %}">Excluir</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card tabela-vazia">
+    {% if busca %}
+      Nenhum combo encontrado com esse nome.
+    {% else %}
+      Nenhum combo cadastrado ainda.
+      <a href="{% url 'pedidos:combo_criar' %}">Criar o primeiro</a>.
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

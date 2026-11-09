@@ -22,11 +22,17 @@
           </span>
 
           <ul class="b-itens">
+            {% for pc in pedido.combos.all %}
+              <li class="b-combo" title="{% for i in pc.combo.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                <b>{{ pc.quantidade }}×</b> {{ pc.combo.nome }}
+              </li>
+            {% endfor %}
             {% for item in pedido.itens.all %}
               <li><b>{{ item.quantidade }}×</b> {{ item.produto.nome }}</li>
-            {% empty %}
-              <li class="b-sem-itens">pedido sem itens</li>
             {% endfor %}
+            {% if not pedido.itens.all and not pedido.combos.all %}
+              <li class="b-sem-itens">pedido sem itens</li>
+            {% endif %}
           </ul>
 
           {% if pedido.observacao %}

@@ -445,3 +445,69 @@ table th { color: var(--muted); font-weight: 600; }
   font-size: 12px; font-weight: 700;
   background: #eef0f5; color: var(--muted); border: 1px solid var(--border);
 }
+
+/* --- Combos --- */
+.combo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.combo-card.inativo { opacity: .6; }
+.combo-topo { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.combo-nome { margin: 0 0 6px; font-size: 20px; }
+.combo-preco { text-align: right; white-space: nowrap; }
+.combo-preco strong { font-size: 22px; display: block; }
+.combo-preco small { color: var(--muted); font-size: 12px; text-decoration: line-through; }
+.combo-economia {
+  display: block; margin-top: 4px; font-size: 12px; font-weight: 800;
+  color: #1e6a3a; background: #eaf8f0; border-radius: 999px; padding: 2px 8px;
+}
+.combo-alerta { color: var(--danger) !important; text-decoration: none !important; }
+.combo-itens { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.combo-itens li {
+  display: flex; align-items: center; gap: 8px; font-size: 15px;
+  padding: 7px 10px; border: 1px dashed var(--border); border-radius: 10px;
+}
+.combo-itens b { color: var(--primary); }
+.combo-estoque { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.combo-estoque.zero { color: var(--danger); font-weight: 700; }
+.combo-vazio { color: var(--muted); font-style: italic; }
+.combo-acoes { margin-top: 14px; justify-content: flex-start; }
+
+.combo-linha { display: grid; grid-template-columns: 1fr 140px auto; gap: 12px; align-items: end; }
+.combo-linha .form-group { margin: 0; }
+.combo-remover { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; padding-bottom: 10px; }
+@media (max-width: 620px) { .combo-linha { grid-template-columns: 1fr; } }
+
+.combo-previa {
+  margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+  background: #f2f2f8; border: 1px solid var(--border); font-size: 14px;
+}
+.previa-ok { color: #1e6a3a; font-weight: 700; }
+.previa-alerta { color: #a4420a; font-weight: 700; }
+
+/* combo dentro do pedido */
+.k-combo .k-prod small, .combo-escolha small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.b-combo { background: rgba(108, 92, 231, .07); border-style: solid !important; cursor: help; }
+.marca-combo {
+  margin-left: 4px; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  background: rgba(108, 92, 231, .12); color: var(--primary); white-space: nowrap;
+}
+
+/* escolher combo ao montar o pedido */
+.combo-oferta { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+.combo-escolha {
+  display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+  padding: 14px; border: 2px solid var(--border); border-radius: 12px; background: #fff;
+  transition: border-color .15s ease, background .15s ease;
+}
+.combo-escolha:hover { border-color: var(--primary); }
+.combo-escolha.escolhido { border-color: var(--primary); background: rgba(108, 92, 231, .07); }
+.combo-escolha.esgotado { opacity: .55; cursor: not-allowed; }
+.combo-escolha input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
+.combo-escolha-corpo { flex: 1; min-width: 0; }
+.combo-escolha-topo { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.combo-escolha-topo b { line-height: 1.25; }
+.combo-escolha-preco { font-weight: 800; white-space: nowrap; }
+.combo-escolha .combo-economia { display: inline-block; margin-top: 6px; }
+.combo-qtd { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+/* display:flex na classe venceria o atributo hidden */
+.combo-qtd[hidden] { display: none; }
+.combo-qtd .qty-input { width: 64px; }
+@media (prefers-reduced-motion: reduce) { .combo-escolha { transition: none; } }
