@@ -11,6 +11,18 @@ from . import carrinho as cart
 from .models import Produto, Combo, Pedido, PedidoItem, PedidoCombo, Categoria
 
 
+def _pedidos_abertos(sessao):
+    """Pedidos desta sessão que ainda estão acontecendo, do mais novo ao mais velho."""
+    ids = cart.ids_dos_pedidos(sessao)
+    if not ids:
+        return []
+    achados = {
+        p.pk: p
+        for p in Pedido.objects.filter(pk__in=ids).exclude(status=Pedido.Status.CANCELADO)
+    }
+    return [achados[i] for i in ids if i in achados][:3]
+
+
 def cardapio(request):
     produtos = Produto.objects.filter(ativo=True).select_related("categoria").order_by("nome")
     combos = [
@@ -45,6 +57,7 @@ def cardapio(request):
         "secoes": secoes,
         "combos": combos,
         "resumo": resumo,
+        "pedidos_abertos": _pedidos_abertos(request.session),
     })
 
 
@@ -74,7 +87,10 @@ def carrinho_ver(request):
     resumo = cart.detalhar(request.session)
     if resumo["ajustado"]:
         messages.warning(request, "Ajustamos o carrinho: algum item saiu do cardápio ou acabou.")
-    return render(request, "cardapio/carrinho.html", {"resumo": resumo})
+    return render(request, "cardapio/carrinho.html", {
+        "resumo": resumo,
+        "pedidos_abertos": _pedidos_abertos(request.session),
+    })
 
 
 def finalizar(request):

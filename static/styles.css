@@ -683,3 +683,26 @@ table th { color: var(--muted); font-weight: 600; }
   background: #eaf8f0; border: 1px solid #caefd9; color: #1e6a3a;
 }
 .pg-aviso b { display: block; font-size: 17px; margin-bottom: 2px; }
+
+/* --- Aviso de pedido em aberto, no topo do cardápio --- */
+.ab-caixa { display: grid; gap: 8px; margin-bottom: 18px; }
+.ab-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border-radius: 12px; text-decoration: none;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.ab-item:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.ab-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ab-texto b { font-size: 16px; }
+.ab-texto small { font-size: 13px; opacity: .85; }
+.ab-seta { font-size: 26px; line-height: 1; opacity: .5; flex-shrink: 0; }
+
+/* a cor conta o estado sem precisar ler */
+.status-fundo-AGPG { background: #fff8e8; border-color: #ffe0a6; color: #7a5300; }
+.status-fundo-ENVC { background: #eef2ff; border-color: #c9d2ff; color: #3730a3; }
+.status-fundo-CONC { background: #eaf8f0; border-color: #caefd9; color: #1e6a3a; }
+
+.ab-todos { font-size: 13px; color: var(--primary); text-decoration: none; justify-self: start; }
+.ab-todos:hover { text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { .ab-item { transition: none; } .ab-item:hover { transform: none; } }

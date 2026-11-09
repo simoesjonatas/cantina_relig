@@ -7,6 +7,8 @@
   <p class="rel-sub">Monte seu pedido. No final é só dizer seu nome — não precisa de cadastro.</p>
 </div>
 
+{% include "cardapio/_abertos.html" %}
+
 {% if combos or secoes %}
   <nav class="cd-atalhos" aria-label="Seções do cardápio">
     {% if combos %}<a href="#cat-combos">Combos</a>{% endif %}

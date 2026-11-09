@@ -5,6 +5,8 @@
 <a class="rel-voltar" href="{% url 'pedidos:cardapio' %}">← Continuar escolhendo</a>
 <h1 class="rel-titulo">Seu carrinho</h1>
 
+{% include "cardapio/_abertos.html" %}
+
 {% if resumo.linhas %}
   <div class="card sem-padding">
     <ul class="ca-lista">

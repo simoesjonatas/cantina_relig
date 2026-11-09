@@ -1,0 +1,26 @@
+{# aviso no topo do cardápio: a pessoa tem pedido em andamento #}
+{% if pedidos_abertos %}
+  <section class="ab-caixa">
+    {% for p in pedidos_abertos %}
+      <a class="ab-item status-fundo-{{ p.status }}" href="{% url 'pedidos:cliente_pedido_detalhe' p.pk %}">
+        <span class="ab-texto">
+          <b>
+            {% if p.status == "CONC" %}Seu pedido está pronto!
+            {% elif p.status == "ENVC" %}Seu pedido está em preparo
+            {% elif p.status == "AGPG" %}Pedido aguardando pagamento
+            {% else %}Pedido em aberto{% endif %}
+          </b>
+          <small>
+            #{{ p.numero }} · R$ {{ p.total|floatformat:2 }}
+            {% if p.status == "CONC" %}· pode retirar no balcão
+            {% elif p.status == "AGPG" %}· vá ao caixa pagar{% endif %}
+          </small>
+        </span>
+        <span class="ab-seta" aria-hidden="true">›</span>
+      </a>
+    {% endfor %}
+    {% if pedidos_abertos|length > 1 %}
+      <a class="ab-todos" href="{% url 'pedidos:meus_pedidos' %}">Ver todos os meus pedidos</a>
+    {% endif %}
+  </section>
+{% endif %}
