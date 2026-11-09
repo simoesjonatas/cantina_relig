@@ -29,17 +29,7 @@
 
   <hr>
 
-  <h2>Mostre este QR Code no caixa</h2>
-
-  <img
-    alt="QR Code do pedido"
-    src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={{ pedido.numero }}"
-  />
-
-  <p class="mt-3">
-    Ou informe este número no caixa:<br>
-    <strong>{{ pedido.numero }}</strong>
-  </p>
+  {% include "partials/qr_pagamento.html" %}
 
   {% if pedido.observacao %}
   <div class="card" style="margin-bottom:12px;">

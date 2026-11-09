@@ -706,3 +706,21 @@ table th { color: var(--muted); font-weight: 600; }
 .ab-todos { font-size: 13px; color: var(--primary); text-decoration: none; justify-self: start; }
 .ab-todos:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .ab-item { transition: none; } .ab-item:hover { transform: none; } }
+
+/* --- QR do pagamento --- */
+.qr-caixa {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; text-align: center;
+}
+.qr-caixa h2 { margin: 0 0 14px; font-size: 18px; }
+.qr-img { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
+.qr-falhou {
+  margin: 0 auto 10px; max-width: 320px; padding: 10px 12px; border-radius: 10px; font-size: 14px;
+  background: #fff8e8; border: 1px solid #ffe0a6; color: #7a5300;
+}
+.qr-numero { margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+.qr-numero b {
+  display: inline-block; margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px; letter-spacing: 1px; color: var(--text);
+}

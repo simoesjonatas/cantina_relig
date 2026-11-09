@@ -1,0 +1,23 @@
+{% comment %}
+  Mostrado em qualquer tela do pedido enquanto o pagamento não sai, para a
+  pessoa achar o QR venha de onde vier.
+{% endcomment %}
+{% if pedido.status == "AGPG" %}
+  <section class="qr-caixa">
+    <h2>Mostre no caixa</h2>
+
+    <img class="qr-img"
+         src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={{ pedido.numero }}"
+         alt="QR Code do pedido {{ pedido.numero }}"
+         onerror="this.hidden=true; document.getElementById('qrFalhou').hidden=false;">
+
+    <p id="qrFalhou" hidden class="qr-falhou">
+      Não deu para carregar o QR Code. Sem problema: informe o número abaixo.
+    </p>
+
+    <p class="qr-numero">
+      Ou diga este número:<br>
+      <b>{{ pedido.numero }}</b>
+    </p>
+  </section>
+{% endif %}
