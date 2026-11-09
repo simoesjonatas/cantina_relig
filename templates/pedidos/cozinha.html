@@ -10,6 +10,11 @@
     <button class="btn" id="btnRefresh">Atualizar agora</button>
     <button class="btn ghost" onclick="window.print()">Imprimir</button>
   </div>
+  <div class="legenda-consumo">
+    <span><i class="legenda-local"></i> comer no local</span>
+    <span><i class="legenda-viagem"></i> para viagem</span>
+  </div>
+
   <label class="row" style="gap:8px; align-items:center;">
     <input type="checkbox" id="autoRefresh" />
     Auto-atualizar a cada 10s
@@ -19,7 +24,8 @@
 {% if comandas %}
   <div class="k-grid">
     {% for comanda in comandas %}
-      <article class="k-card card" data-created="{{ comanda.pedido.criado_em|date:'c' }}">
+      <article class="k-card card {% if comanda.pedido.e_viagem %}consumo-viagem{% else %}consumo-local{% endif %}"
+               data-created="{{ comanda.pedido.criado_em|date:'c' }}">
         <header class="row" style="justify-content:space-between; align-items:flex-start;">
           <div>
             <div class="k-numero">

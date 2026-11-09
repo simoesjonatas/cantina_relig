@@ -7,10 +7,15 @@
   <span class="b-contador">{{ prontos|length }}</span>
 </div>
 
+<div class="legenda-consumo" style="margin-bottom:14px;">
+  <span><i class="legenda-local"></i> comer no local</span>
+  <span><i class="legenda-viagem"></i> para viagem</span>
+</div>
+
 {% if prontos %}
   <ul class="b-lista" id="lista" data-ids="{{ ids_atuais }}">
     {% for pedido in prontos %}
-      <li class="b-item card">
+      <li class="b-item card {% if pedido.e_viagem %}consumo-viagem{% else %}consumo-local{% endif %}">
         <div class="b-info">
           <span class="b-nome">
             {{ pedido.nome_cliente }}

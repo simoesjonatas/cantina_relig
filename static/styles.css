@@ -778,3 +778,29 @@ table th { color: var(--muted); font-weight: 600; }
   50% { opacity: .35; transform: scale(.75); }
 }
 @media (prefers-reduced-motion: reduce) { .ac-ponto { animation: none; } }
+
+/* --- Cor por tipo de consumo, na cozinha e no balcão ---
+   Laranja x azul em vez de verde x vermelho: é o par que continua
+   distinguível para quem tem daltonismo. A etiqueta escrita continua,
+   a cor só acelera a leitura de longe. */
+.k-card.consumo-viagem,
+.b-item.consumo-viagem {
+  border-left: 8px solid #e8720c;
+  background: #fff8f2;
+}
+.k-card.consumo-local,
+.b-item.consumo-local {
+  border-left: 8px solid #0b8bbd;
+  background: #f4fbff;
+}
+
+/* os itens dentro do card seguem brancos, para o texto não sumir no fundo */
+.consumo-viagem .k-itens li, .consumo-local .k-itens li,
+.consumo-viagem .b-itens li, .consumo-local .b-itens li { background: #fff; }
+
+/* legenda das cores */
+.legenda-consumo { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.legenda-consumo span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-consumo i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.legenda-viagem { background: #e8720c; }
+.legenda-local { background: #0b8bbd; }
