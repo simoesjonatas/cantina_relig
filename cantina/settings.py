@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,13 +24,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--i19fa^my_!6z3tkuo3d!uk7)zhdbkj4ub34krwp12cr77bmk&'
+# A chave vem do ambiente (.env, que não é versionado). O valor abaixo só
+# existe para o desenvolvimento local e é público — por isso, com DEBUG
+# desligado, o sistema se recusa a subir sem uma chave de verdade.
+CHAVE_DE_DESENVOLVIMENTO = "django-insecure-apenas-para-desenvolvimento-local"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or CHAVE_DE_DESENVOLVIMENTO
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # O docker-compose define DJANGO_DEBUG=False; sem a variável, segue True (dev).
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip().lower() not in ("false", "0", "no")
 
 ALLOWED_HOSTS = ['*']
+
+if not DEBUG and SECRET_KEY == CHAVE_DE_DESENVOLVIMENTO:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY não foi definida. Em produção ela é obrigatória: "
+        "gere uma chave e coloque no .env do servidor."
+    )
 
 CSRF_TRUSTED_ORIGINS = [
     'https://relig.simoesti.com.br',

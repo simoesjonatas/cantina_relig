@@ -6,6 +6,9 @@ services:
     container_name: cantina_web
     restart: always
     command: gunicorn cantina.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    env_file:
+      # fica fora do versionamento; veja env.example para o formato
+      - .env
     environment:
       # o WhiteNoise só comprime e versiona os estáticos com DEBUG desligado
       DJANGO_DEBUG: "False"
