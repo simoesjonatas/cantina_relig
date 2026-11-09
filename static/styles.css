@@ -414,6 +414,8 @@ table th { color: var(--muted); font-weight: 600; }
 }
 
 /* --- Comer no local x para viagem --- */
+.icone-consumo { width: 1.15em; height: 1.15em; flex-shrink: 0; }
+.consumo-opcao .icone-consumo { width: 1.3em; height: 1.3em; }
 .consumo-escolha { display: flex; gap: 10px; flex-wrap: wrap; }
 .consumo-opcao { flex: 1 1 160px; cursor: pointer; }
 .consumo-opcao input { position: absolute; opacity: 0; width: 0; height: 0; }

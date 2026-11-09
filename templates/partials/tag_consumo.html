@@ -1,5 +1,5 @@
 {% if pedido.e_viagem %}
-  <span class="tag-viagem" title="Para viagem — embalar para levar"><span aria-hidden="true">🥡</span> Viagem</span>
+  <span class="tag-viagem" title="Para viagem — embalar para levar">{% include "partials/icone_viagem.html" %} Viagem</span>
 {% else %}
-  <span class="tag-local" title="Comer no local"><span aria-hidden="true">🍽️</span> No local</span>
+  <span class="tag-local" title="Comer no local">{% include "partials/icone_local.html" %} No local</span>
 {% endif %}

@@ -100,7 +100,9 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
     }
 
+    .icone-consumo { width: 1.1em; height: 1.1em; flex-shrink: 0; vertical-align: -0.18em; }
     .viagem {
+      display: inline-flex; align-items: center; gap: .4em;
       flex-shrink: 0;
       font-size: clamp(13px, 1.3vw, 22px); font-weight: 800;
       padding: clamp(3px, .5vh, 7px) clamp(8px, .9vw, 14px); border-radius: 999px;
@@ -213,8 +215,13 @@
       if (pedido.viagem) {
         const etiqueta = document.createElement('span');
         etiqueta.className = 'viagem';
-        etiqueta.textContent = '🥡 viagem';
         etiqueta.title = 'Para viagem';
+        etiqueta.innerHTML =
+          '<svg class="icone-consumo" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+          ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M5 8h14l-1.1 11.3a2 2 0 0 1-2 1.7H8.1a2 2 0 0 1-2-1.7L5 8z"/>' +
+          '<path d="M5 8l1.9-4.3a1 1 0 0 1 .9-.6h8.4a1 1 0 0 1 .9.6L19 8"/>' +
+          '<path d="M12 3.1V8"/></svg> viagem';
         li.append(etiqueta);
       }
 

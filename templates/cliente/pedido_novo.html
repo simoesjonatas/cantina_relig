@@ -42,7 +42,7 @@
         <label class="consumo-opcao">
           {{ opcao.tag }}
           <span>
-            {% if opcao.data.value == "VIAGEM" %}<span aria-hidden="true">🥡</span>{% else %}<span aria-hidden="true">🍽️</span>{% endif %}
+            {% if opcao.data.value == "VIAGEM" %}{% include "partials/icone_viagem.html" %}{% else %}{% include "partials/icone_local.html" %}{% endif %}
             {{ opcao.choice_label }}
           </span>
         </label>
