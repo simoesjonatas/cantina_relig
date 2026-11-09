@@ -71,6 +71,7 @@ urlpatterns = [
     # Fluxo do cliente (sem login)
     path("cliente/pedido/novo/", views_cliente.pedido_novo_cliente, name="cliente_pedido_novo"),
     path("cliente/pedido/<int:pk>/", views_cliente.pedido_cliente_detalhe, name="cliente_pedido_detalhe"),
+    path("cliente/pedido/<int:pk>/status/", views_cliente.pedido_cliente_status, name="cliente_pedido_status"),
     path("cliente/pedido/<int:pk>/pagar/", views_cliente.pedido_cliente_enviar_pagamento, name="cliente_pedido_enviar_pagamento"),
     path("cliente/pedido/<int:pk>/pagamento/", 
      views_cliente.pedido_cliente_pagamento, 
@@ -79,6 +80,7 @@ urlpatterns = [
 
     # Caixa
     path("caixa/pendentes/", views.caixa_pendentes, name="caixa_pendentes"),
+    path("caixa/pendentes/dados/", views.caixa_pendentes_dados, name="caixa_pendentes_dados"),
     path("caixa/confirmar/<int:pedido_id>/", views.caixa_confirmar_pagamento, name="caixa_confirmar_pagamento"),
     path("caixa/buscar/", views.caixa_buscar_pedido, name="caixa_buscar_pedido"),
 

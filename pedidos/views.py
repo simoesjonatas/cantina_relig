@@ -226,12 +226,33 @@ def home(request):
     ultimos = Pedido.objects.order_by("-criado_em")[:10]
     return render(request, "home.html", {"resumo": resumo, "ultimos": ultimos})
 
-@login_required
-def caixa_pendentes(request):
-    pendentes = Pedido.objects.filter(status=Pedido.Status.PAGAMENTO).order_by("criado_em")
-    return render(request, "caixa/pendentes.html", {"pedidos": pendentes})
+def _pendentes_qs():
+    return (
+        Pedido.objects.filter(status=Pedido.Status.PAGAMENTO)
+        .prefetch_related("itens__produto", "combos__combo")
+        .order_by("criado_em")
+    )
+
 
 @login_required
+def caixa_pendentes(request):
+    pendentes = list(_pendentes_qs())
+    return render(request, "caixa/pendentes.html", {
+        "pedidos": pendentes,
+        "ids_atuais": ",".join(str(p.id) for p in pendentes),
+        "total_fila": sum((p.total for p in pendentes), Decimal("0.00")),
+    })
+
+
+@login_required
+def caixa_pendentes_dados(request):
+    """Só os ids, para a tela saber quando chegou pedido novo."""
+    ids = _pendentes_qs().values_list("id", flat=True)
+    return JsonResponse({"ids": list(ids)})
+
+
+@login_required
+@require_POST
 def caixa_confirmar_pagamento(request, pedido_id):
     pedido = get_object_or_404(Pedido, id=pedido_id)
 

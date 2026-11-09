@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import PedidoForm, PedidoItemFormSet, PedidoComboFormSet
 from decimal import Decimal
@@ -96,3 +97,9 @@ def pedido_cliente_pagamento(request, pk):
         "itens": itens_ctx,
         "total": total,
     })
+
+
+def pedido_cliente_status(request, pk):
+    """Só o status, para a tela do cliente saber quando algo mudou."""
+    pedido = get_object_or_404(Pedido, pk=pk)
+    return JsonResponse({"status": pedido.status})

@@ -724,3 +724,57 @@ table th { color: var(--muted); font-weight: 600; }
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 22px; letter-spacing: 1px; color: var(--text);
 }
+
+/* --- Caixa --- */
+.cx-busca { margin-bottom: 18px; }
+.cx-busca .form-group { margin: 0; }
+.cx-busca-linha { display: flex; gap: 8px; flex-wrap: wrap; }
+.cx-busca-linha input { flex: 1; min-width: 200px; font-size: 16px; }
+.cx-busca-linha .btn { min-height: 46px; white-space: nowrap; }
+.cx-leitor { margin-top: 16px; text-align: center; }
+.cx-leitor[hidden] { display: none; }
+.cx-leitor video { width: 100%; max-width: 300px; border: 1px solid var(--border); border-radius: 12px; display: block; margin: 0 auto 12px; }
+
+.cx-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.cx-item { border-left: 6px solid var(--primary); }
+.cx-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.cx-quem { min-width: 0; }
+.cx-nome { font-size: 22px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.cx-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.cx-espera.atrasado { color: var(--danger); font-weight: 700; }
+.cx-valor { font-size: 24px; font-weight: 800; white-space: nowrap; }
+
+.cx-itens { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 0; }
+.cx-itens li { font-size: 15px; padding: 6px 12px; border-radius: 10px; background: #f2f2f8; border: 1px solid var(--border); }
+.cx-itens b { color: var(--primary); margin-right: 4px; }
+.cx-sem-itens { color: var(--muted); font-style: italic; }
+
+.cx-acoes { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+.cx-acoes form { margin: 0; }
+.cx-confirmar { font-size: 16px; padding: 13px 22px; }
+.cx-vazio {
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  text-align: center; color: var(--muted); padding: 44px 20px; font-size: 17px;
+}
+@media (max-width: 560px) {
+  .cx-topo { flex-direction: column; gap: 4px; }
+  .cx-acoes { justify-content: stretch; }
+  .cx-acoes form, .cx-confirmar { width: 100%; }
+}
+
+/* --- Barra de acompanhamento do pedido (cliente) --- */
+.ac-barra {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);
+}
+.ac-estado { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; }
+.ac-aviso { font-size: 12px; opacity: .8; }
+.ac-ponto {
+  width: 10px; height: 10px; border-radius: 50%; background: currentColor; flex-shrink: 0;
+  animation: ac-pulsa 1.8s ease-in-out infinite;
+}
+@keyframes ac-pulsa {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .35; transform: scale(.75); }
+}
+@media (prefers-reduced-motion: reduce) { .ac-ponto { animation: none; } }

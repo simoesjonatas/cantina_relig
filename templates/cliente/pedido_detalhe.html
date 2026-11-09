@@ -6,6 +6,8 @@
 <a class="rel-voltar" href="{% url 'pedidos:meus_pedidos' %}">← Meus pedidos</a>
 <h1>Pedido {{ pedido.numero }} — {{ pedido.nome_cliente }}</h1>
 
+{% include "partials/acompanhar_pedido.html" %}
+
 {% if pedido.status == "RASC" %}
 
 

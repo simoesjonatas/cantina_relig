@@ -1,0 +1,35 @@
+{% comment %}
+  Barra de acompanhamento na tela do cliente: diz em que pé está o pedido
+  e recarrega sozinha quando a cozinha ou o caixa mexem nele.
+{% endcomment %}
+<div class="ac-barra status-fundo-{{ pedido.status }}">
+  <span class="ac-estado">
+    <span class="ac-ponto" aria-hidden="true"></span>
+    {% if pedido.status == "AGPG" %}Aguardando você pagar no caixa
+    {% elif pedido.status == "ENVC" %}A cozinha está preparando
+    {% elif pedido.status == "CONC" %}Pronto! Pode retirar no balcão
+    {% elif pedido.status == "CANC" %}Pedido cancelado
+    {% else %}{{ pedido.get_status_display }}{% endif %}
+  </span>
+  {% if pedido.status != "CONC" and pedido.status != "CANC" %}
+    <small class="ac-aviso">acompanhando — a tela avisa sozinha</small>
+  {% endif %}
+</div>
+
+{% if pedido.status != "CONC" and pedido.status != "CANC" %}
+<script>
+  (function () {
+    const url = "{% url 'pedidos:cliente_pedido_status' pedido.pk %}";
+    const atual = "{{ pedido.status }}";
+    setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.status !== atual) location.reload();
+      } catch (e) { /* sem rede: tenta de novo no próximo ciclo */ }
+    }, 10000);
+  })();
+</script>
+{% endif %}

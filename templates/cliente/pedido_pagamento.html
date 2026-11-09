@@ -12,6 +12,8 @@
 
   <h1>Pedido {{ pedido.numero }}</h1>
 
+  {% include "partials/acompanhar_pedido.html" %}
+
   <p>Nome do cliente: <strong>{{ pedido.nome_cliente }}</strong></p>
   <div class="card" style="margin-bottom:16px;">
   <div class="row" style="justify-content: space-between;">

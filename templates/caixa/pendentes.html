@@ -1,125 +1,161 @@
 {% extends "base.html" %}
-
-{% block title %}Pagamentos Pendentes{% endblock %}
+{% block title %}Caixa{% endblock %}
 
 {% block content %}
-
-<h1>Caixa – Pedidos Aguardando Pagamento</h1>
-
-<div class="card" style="margin-bottom: 20px; padding: 16px;">
-
-  <h2 style="margin-bottom:10px;">📌 Buscar Pedido</h2>
-
-  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-    
-    <!-- Busca manual -->
-    <input id="buscaPedido" type="text" class="form-control"
-           placeholder="Digite o número do pedido (ex: 20251124-0038)"
-           style="flex:1; min-width:260px;">
-
-    <button class="btn primary" onclick="buscarPedido()">
-      Buscar
-    </button>
-
-    <button class="btn" onclick="toggleLeitor()">
-      Ler QR Code
-    </button>
-
-  </div>
-
-  <!-- Área do leitor QR -->
-  <div id="leitorContainer" style="margin-top:20px; display:none; text-align:center;">
-      <h3>Ler QR Code</h3>
-      <video id="qr-video" style="width: 260px; border:1px solid #ddd; border-radius:8px;"></video>
-
-      <button class="btn danger" onclick="toggleLeitor()" style="margin-top:10px;">
-          Fechar Leitor
-      </button>
+<div class="rel-cabecalho">
+  <div>
+    <h1 class="rel-titulo">Caixa</h1>
+    <p class="rel-sub">Pedidos aguardando pagamento. A fila atualiza sozinha.</p>
   </div>
 </div>
 
+<div class="resumo">
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Na fila</span>
+    <span class="resumo-valor">{{ pedidos|length }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">A receber</span>
+    <span class="resumo-valor">R$ {{ total_fila|floatformat:2 }}</span>
+  </div>
+</div>
 
+<div class="card cx-busca">
+  <div class="form-group">
+    <label for="buscaPedido">Buscar pelo número</label>
+    <div class="cx-busca-linha">
+      <input id="buscaPedido" type="text" inputmode="numeric"
+             placeholder="ex: 20261109-0008" autocomplete="off">
+      <button class="btn primary" type="button" id="btnBuscar">Buscar</button>
+      <button class="btn ghost" type="button" id="btnLeitor">📷 Ler QR</button>
+    </div>
+  </div>
 
-<h2>Pedidos Aguardando Pagamento</h2>
+  <div id="leitorContainer" class="cx-leitor" hidden>
+    <video id="qr-video"></video>
+    <button class="btn danger" type="button" id="btnFecharLeitor">Fechar leitor</button>
+  </div>
+</div>
 
 {% if pedidos %}
-    <div class="vstack gap8">
+  <ul class="cx-lista" id="lista" data-ids="{{ ids_atuais }}">
     {% for p in pedidos %}
-        <div class="card" style="padding: 12px;">
-            <div class="row" style="justify-content: space-between;">
-                <div>
-                  {% comment %} <a class="btn ghost" href="{% url 'pedidos:detalhe' p.id %}">ver</a> {% endcomment %}
-                  <a href="{% url 'pedidos:detalhe' p.id %}">
-
-                    <strong>Pedido {{ p.numero }}</strong><br>
-                    Cliente: {{ p.nome_cliente }}
-                    {% with pedido=p %}{% include "partials/tag_consumo.html" %}{% endwith %}<br>
-                    Total: <strong>R$ {{ p.total|floatformat:2 }}</strong>
-                  </a>
-                </div>
-
-                <div class="row end" style="align-items: center;">
-                    <a href="{% url 'pedidos:caixa_confirmar_pagamento' p.id %}"
-                       class="btn primary">
-                        Confirmar Pagamento
-                    </a>
-                </div>
+      <li class="card cx-item">
+        <div class="cx-topo">
+          <div class="cx-quem">
+            <span class="cx-nome">{{ p.nome_cliente }}</span>
+            {% with pedido=p %}{% include "partials/tag_consumo.html" %}{% endwith %}
+            <div class="cx-meta">
+              #{{ p.numero }} · <b class="cx-espera" data-desde="{{ p.criado_em|date:'c' }}"></b>
             </div>
+          </div>
+          <div class="cx-valor">R$ {{ p.total|floatformat:2 }}</div>
         </div>
+
+        <ul class="cx-itens">
+          {% for l in p.linhas %}
+            <li><b>{{ l.qtd }}×</b> {{ l.nome }}</li>
+          {% empty %}
+            <li class="cx-sem-itens">pedido sem itens</li>
+          {% endfor %}
+        </ul>
+
+        {% if p.observacao %}
+          <p class="b-obs"><b>Obs:</b> {{ p.observacao }}</p>
+        {% endif %}
+
+        <div class="cx-acoes">
+          <a class="btn ghost btn-pequeno" href="{% url 'pedidos:detalhe' p.id %}">Ver detalhe</a>
+          <form method="post" action="{% url 'pedidos:caixa_confirmar_pagamento' p.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn primary cx-confirmar">Recebi o pagamento</button>
+          </form>
+        </div>
+      </li>
     {% endfor %}
-    </div>
+  </ul>
 {% else %}
-    <p>Nenhum pedido aguardando pagamento.</p>
+  <div class="card cx-vazio" id="lista" data-ids="">
+    Nenhum pedido aguardando pagamento.
+    <small>Assim que alguém fechar um pedido, ele aparece aqui sozinho.</small>
+  </div>
 {% endif %}
 
+<script>
+  // --- há quanto tempo está esperando ---
+  function humanizar(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return 'agora mesmo';
+    if (min < 60) return `esperando há ${min}min`;
+    return `esperando há ${Math.floor(min / 60)}h ${min % 60}min`;
+  }
+  function tickEspera() {
+    document.querySelectorAll('.cx-espera').forEach(el => {
+      const desde = new Date(el.dataset.desde);
+      const ms = Date.now() - desde.getTime();
+      el.textContent = humanizar(ms);
+      el.classList.toggle('atrasado', ms > 10 * 60000);
+    });
+  }
+  tickEspera();
+  setInterval(tickEspera, 30000);
+
+  // --- recarrega só quando a fila muda ---
+  const lista = document.getElementById('lista');
+  async function checar() {
+    try {
+      const r = await fetch("{% url 'pedidos:caixa_pendentes_dados' %}", { cache: 'no-store' });
+      if (!r.ok) return;
+      const { ids } = await r.json();
+      if (ids.join(',') !== lista.dataset.ids) location.reload();
+    } catch (e) { /* sem rede: mantém a tela */ }
+  }
+  setInterval(checar, 8000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checar();
+  });
+
+  // --- busca ---
+  const campo = document.getElementById('buscaPedido');
+  const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}";
+  function buscar() {
+    const numero = campo.value.trim();
+    if (!numero) { campo.focus(); return; }
+    window.location.href = urlBusca + "?numero=" + encodeURIComponent(numero);
+  }
+  document.getElementById('btnBuscar').addEventListener('click', buscar);
+  campo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscar(); } });
+</script>
 
 {# QrScanner: funciona em Android e iPhone #}
 <script type="module">
   import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
 
+  const caixa = document.getElementById('leitorContainer');
+  const video = document.getElementById('qr-video');
+  const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}";
   let scanner = null;
-  let scannerAtivo = false;
 
-  window.toggleLeitor = function () {
-    const ct = document.getElementById("leitorContainer");
-    const videoElem = document.getElementById("qr-video");
-
-    if (!scannerAtivo) {
-      ct.style.display = "block";
-      scannerAtivo = true;
-
-      scanner = new QrScanner(
-        videoElem,
-        result => {
-          const numero = result.data.trim();
-          const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}?numero=" + encodeURIComponent(numero);
-          window.location.href = urlBusca;
-        },
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-        }
-      );
-
-      scanner.start();
-    } else {
-      ct.style.display = "none";
-      scannerAtivo = false;
-      if (scanner) {
+  async function abrir() {
+    caixa.hidden = false;
+    if (!scanner) {
+      scanner = new QrScanner(video, r => {
         scanner.stop();
-      }
+        window.location.href = urlBusca + "?numero=" + encodeURIComponent(r.data.trim());
+      }, { highlightScanRegion: true, highlightCodeOutline: true });
+    }
+    try {
+      await scanner.start();
+    } catch (e) {
+      caixa.hidden = true;
+      alert('Não consegui abrir a câmera. Verifique a permissão do navegador, ou digite o número do pedido.');
     }
   }
-
-  window.buscarPedido = function () {
-    const numero = document.getElementById("buscaPedido").value.trim();
-    if (!numero) {
-      alert("Digite o número do pedido.");
-      return;
-    }
-    const urlBusca = "{% url 'pedidos:caixa_buscar_pedido' %}?numero=" + encodeURIComponent(numero);
-    window.location.href = urlBusca;
+  function fechar() {
+    caixa.hidden = true;
+    if (scanner) scanner.stop();
   }
+  document.getElementById('btnLeitor').addEventListener('click', () => caixa.hidden ? abrir() : fechar());
+  document.getElementById('btnFecharLeitor').addEventListener('click', fechar);
 </script>
-
 {% endblock %}
