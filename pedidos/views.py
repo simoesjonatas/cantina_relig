@@ -14,6 +14,7 @@ from .services import (
 )
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
+from collections import defaultdict
 from django.core.paginator import Paginator
 from .utils import querystring_sem_pagina
 from django.contrib.auth.decorators import login_required
@@ -53,6 +54,38 @@ def _combos_disponiveis():
     return [c for c in combos if c.itens.exists()]
 
 
+def _dados_estoque(combos):
+    """
+    O que a tela precisa para avisar sobre estoque enquanto a pessoa monta o
+    pedido, em vez de só descobrir na hora de confirmar.
+    """
+    produtos = Produto.objects.filter(ativo=True)
+    return {
+        "produtos": {
+            str(p.id): {"nome": p.nome, "estoque": p.estoque} for p in produtos
+        },
+        "combos": {
+            str(c.id): [
+                {"produto": str(i.produto_id), "qtd": i.quantidade} for i in c.itens.all()
+            ]
+            for c in combos
+        },
+    }
+
+
+def _falta_estoque(consumo):
+    """Recebe {produto_id: quantidade} e devolve o que não cabe no estoque."""
+    faltas = []
+    produtos = Produto.objects.in_bulk([int(k) for k in consumo])
+    for produto_id, pedida in consumo.items():
+        produto = produtos.get(int(produto_id))
+        if produto and pedida > produto.estoque:
+            faltas.append(
+                f"{produto.nome}: pedidas {pedida}, disponíveis {produto.estoque}"
+            )
+    return faltas
+
+
 def detalhe_pedido(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
 
@@ -79,6 +112,30 @@ def criar_pedido(request):
         formset = PedidoItemFormSet(request.POST)
         formset_combos = PedidoComboFormSet(request.POST)
         if form.is_valid() and formset.is_valid() and formset_combos.is_valid():
+            # soma avulsos e combos antes de salvar: o mesmo produto pode
+            # estar nos dois lugares, e conferir separado deixaria passar
+            consumo = defaultdict(int)
+            for f in formset:
+                dados = getattr(f, "cleaned_data", None) or {}
+                if dados.get("produto") and not dados.get("DELETE"):
+                    consumo[str(dados["produto"].id)] += dados.get("quantidade") or 0
+            for f in formset_combos:
+                dados = getattr(f, "cleaned_data", None) or {}
+                if dados.get("combo") and dados.get("quantidade") and not dados.get("DELETE"):
+                    for ci in dados["combo"].itens.all():
+                        consumo[str(ci.produto_id)] += ci.quantidade * dados["quantidade"]
+
+            faltas = _falta_estoque(consumo)
+            if faltas:
+                for f in faltas:
+                    messages.error(request, f"Estoque insuficiente — {f}")
+                return render(request, "pedidos/criar_pedido.html", {
+                    "form": form, "formset": formset, "formset_combos": formset_combos,
+                    "preco_map": {p.id: float(p.preco) for p in Produto.objects.all()},
+                    "combos": _combos_disponiveis(),
+                    "estoque": _dados_estoque(_combos_disponiveis()),
+                })
+
             pedido = form.save()
 
             formset.instance = pedido
@@ -106,9 +163,11 @@ def criar_pedido(request):
 
     # mapa para exibir preço automático no front
     preco_map = {p.id: float(p.preco) for p in Produto.objects.all()}
+    combos_disp = _combos_disponiveis()
     return render(request, "pedidos/criar_pedido.html", {
         "form": form, "formset": formset, "formset_combos": formset_combos,
-        "preco_map": preco_map, "combos": _combos_disponiveis(),
+        "preco_map": preco_map, "combos": combos_disp,
+        "estoque": _dados_estoque(combos_disp),
     })
 
 

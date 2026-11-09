@@ -58,6 +58,12 @@
   <hr>
 
   <h2 class="mb8">Itens</h2>
+
+  <div class="est-alerta" id="estAlerta" hidden>
+    <b>Não vai dar para este pedido:</b>
+    <ul id="estLista"></ul>
+  </div>
+
   {{ formset.management_form }}
 
   <div id="itensContainer" class="vstack gap8">
@@ -71,6 +77,7 @@
           <div class="form-group">
             <label>Quantidade</label>
             {{ f.quantidade }}
+            <small class="est-linha"></small>
           </div>
           {% comment %} <div class="form-group">
             <label>Preço unitário</label>
@@ -101,6 +108,7 @@
         <div class="form-group">
           <label>Quantidade</label>
           {{ formset.empty_form.quantidade }}
+          <small class="est-linha"></small>
         </div>
         {% comment %} <div class="form-group">
           <label>Preço unitário</label>
@@ -341,6 +349,91 @@
     });
 
     regravar();
+  })();
+</script>
+
+
+{{ estoque|json_script:"dadosEstoque" }}
+<script>
+  // Confere o estoque enquanto a pessoa monta o pedido. Soma o mesmo produto
+  // em várias linhas e o que vai dentro dos combos — era isso que só
+  // aparecia na tela seguinte.
+  (function () {
+    const dados = JSON.parse(document.getElementById('dadosEstoque').textContent);
+    const alerta = document.getElementById('estAlerta');
+    const lista = document.getElementById('estLista');
+    const form = document.getElementById('pedidoForm');
+
+    function linhasDeItem() {
+      return [...document.querySelectorAll('#itensContainer .item-row')];
+    }
+
+    function conferir() {
+      const consumo = {};
+      const porLinha = [];
+
+      linhasDeItem().forEach(linha => {
+        const sel = linha.querySelector('select[name$="-produto"]');
+        const qtd = linha.querySelector('input[name$="-quantidade"]');
+        const id = sel && sel.value;
+        const n = parseInt(qtd && qtd.value, 10) || 0;
+        porLinha.push({ linha, id, n });
+        if (id && n > 0) consumo[id] = (consumo[id] || 0) + n;
+      });
+
+      document.querySelectorAll('.combo-check:checked').forEach(chk => {
+        const vezes = parseInt(
+          chk.closest('.combo-escolha').querySelector('.combo-qtd-input').value, 10) || 0;
+        (dados.combos[chk.dataset.combo] || []).forEach(parte => {
+          consumo[parte.produto] = (consumo[parte.produto] || 0) + parte.qtd * vezes;
+        });
+      });
+
+      // quem estourou
+      const faltando = {};
+      Object.entries(consumo).forEach(([id, pedida]) => {
+        const p = dados.produtos[id];
+        if (p && pedida > p.estoque) faltando[id] = { ...p, pedida };
+      });
+
+      // aviso embaixo de cada linha
+      porLinha.forEach(({ linha, id, n }) => {
+        const aviso = linha.querySelector('.est-linha');
+        if (!aviso) return;
+        const p = id && dados.produtos[id];
+        if (!p) { aviso.textContent = ''; aviso.className = 'est-linha'; linha.classList.remove('sem-estoque'); return; }
+
+        if (faltando[id]) {
+          aviso.textContent = `só há ${p.estoque} em estoque` +
+            (consumo[id] > n ? ` — o pedido todo está pedindo ${consumo[id]}` : '');
+          aviso.className = 'est-linha ruim';
+          linha.classList.add('sem-estoque');
+        } else {
+          aviso.textContent = `${p.estoque} em estoque`;
+          aviso.className = 'est-linha';
+          linha.classList.remove('sem-estoque');
+        }
+      });
+
+      const nomes = Object.values(faltando);
+      lista.replaceChildren();
+      nomes.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = `${f.nome}: o pedido pede ${f.pedida}, há ${f.estoque}`;
+        lista.appendChild(li);
+      });
+      alerta.hidden = nomes.length === 0;
+
+      form.querySelectorAll('button[type=submit]').forEach(b => { b.disabled = nomes.length > 0; });
+    }
+
+    form.addEventListener('input', conferir);
+    form.addEventListener('change', conferir);
+    document.addEventListener('click', e => {
+      if (e.target.closest('#btnAdd, .btn-remove, .qty-btn, .combo-escolha')) setTimeout(conferir, 0);
+    });
+    conferir();
+    window.conferirEstoque = conferir;
   })();
 </script>
 

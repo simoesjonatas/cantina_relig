@@ -804,3 +804,16 @@ table th { color: var(--muted); font-weight: 600; }
 .legenda-consumo i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
 .legenda-viagem { background: #e8720c; }
 .legenda-local { background: #0b8bbd; }
+
+/* --- Aviso de estoque no formulário de pedido --- */
+.est-linha { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.est-linha.ruim { color: var(--danger); font-weight: 700; }
+.item-row.sem-estoque { border-color: var(--danger); background: #fdf3f2; }
+.est-alerta {
+  margin-bottom: 14px; padding: 12px 16px; border-radius: 12px;
+  background: #fdeaea; border: 1px solid #f7c7c5; color: #7e1a15;
+}
+.est-alerta[hidden] { display: none; }
+.est-alerta ul { margin: 6px 0 0; padding-left: 20px; }
+.est-alerta li { margin-top: 2px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
