@@ -7,8 +7,15 @@
   <p class="rel-sub">Monte seu pedido. No final é só dizer seu nome — não precisa de cadastro.</p>
 </div>
 
+{% if combos or secoes %}
+  <nav class="cd-atalhos" aria-label="Seções do cardápio">
+    {% if combos %}<a href="#cat-combos">Combos</a>{% endif %}
+    {% for s in secoes %}<a href="#{{ s.id }}">{{ s.nome }}</a>{% endfor %}
+  </nav>
+{% endif %}
+
 {% if combos %}
-  <h2 class="cd-secao">Combos <small>saem mais em conta</small></h2>
+  <h2 class="cd-secao" id="cat-combos">Combos <small>saem mais em conta</small></h2>
   <div class="cd-grade">
     {% for c in combos %}
       {% include "cardapio/_cartao.html" with item=c tipo="combos" combo=True disponivel=c.quantos_cabem escolhido=c.escolhido %}
@@ -16,16 +23,18 @@
   </div>
 {% endif %}
 
-<h2 class="cd-secao">Itens</h2>
-{% if produtos %}
+{% for s in secoes %}
+  <h2 class="cd-secao" id="{{ s.id }}">{{ s.nome }}</h2>
   <div class="cd-grade">
-    {% for p in produtos %}
+    {% for p in s.itens %}
       {% include "cardapio/_cartao.html" with item=p tipo="produtos" combo=False disponivel=p.estoque escolhido=p.escolhido %}
     {% endfor %}
   </div>
-{% else %}
-  <div class="card tabela-vazia">Nenhum item disponível no momento.</div>
-{% endif %}
+{% empty %}
+  {% if not combos %}
+    <div class="card tabela-vazia">Nenhum item disponível no momento.</div>
+  {% endif %}
+{% endfor %}
 
 <div class="cd-barra" id="barraCarrinho" {% if not resumo.itens %}hidden{% endif %}>
   <div class="container cd-barra-interna">

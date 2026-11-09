@@ -3,7 +3,7 @@ from django.forms import ModelForm, inlineformset_factory
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Pedido, PedidoItem, Produto, Combo, ComboItem, PedidoCombo
+from .models import Pedido, PedidoItem, Produto, Combo, ComboItem, PedidoCombo, Categoria
 
 class PedidoForm(ModelForm):
     class Meta:
@@ -21,12 +21,24 @@ class PedidoForm(ModelForm):
         self.fields["consumo"].initial = Pedido.Consumo.LOCAL
         self.fields["consumo"].empty_label = None
 
+class CategoriaForm(ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ["nome", "ordem"]
+        labels = {"nome": "Nome da categoria", "ordem": "Ordem no cardápio"}
+        widgets = {
+            "nome": forms.TextInput(attrs={"placeholder": "ex: Lanches"}),
+            "ordem": forms.NumberInput(attrs={"min": "0"}),
+        }
+
+
 class ProdutoForm(ModelForm):
     class Meta:
         model = Produto
-        fields = ["nome", "descricao", "foto", "preco", "estoque", "ativo"]
+        fields = ["nome", "categoria", "descricao", "foto", "preco", "estoque", "ativo"]
         labels = {
             "nome": "Nome do produto",
+            "categoria": "Categoria",
             "descricao": "Descrição curta",
             "foto": "Foto",
             "preco": "Preço (R$)",

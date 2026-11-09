@@ -6,6 +6,7 @@ from . import views_cardapio
 from . import views_painel
 from . import views_produtos
 from . import views_combos
+from . import views_categorias
 from . import views_usuarios
 
 app_name = "pedidos"
@@ -35,6 +36,11 @@ urlpatterns = [
     path("usuarios/<int:pk>/senha/", views_usuarios.usuario_senha, name="usuario_senha"),
     path("usuarios/<int:pk>/acesso/", views_usuarios.usuario_alternar_ativo, name="usuario_alternar_ativo"),
     path("usuarios/<int:pk>/excluir/", views_usuarios.usuario_excluir, name="usuario_excluir"),
+
+    # Categorias do cardápio
+    path("categorias/", views_categorias.categoria_lista, name="categoria_lista"),
+    path("categorias/<int:pk>/editar/", views_categorias.categoria_editar, name="categoria_editar"),
+    path("categorias/<int:pk>/excluir/", views_categorias.categoria_excluir, name="categoria_excluir"),
 
     # Combos
     path("combos/", views_combos.combo_lista, name="combo_lista"),

@@ -7,7 +7,10 @@
     <h1 class="rel-titulo">Produtos</h1>
     <p class="rel-sub">O que a cantina vende, com preço e estoque.</p>
   </div>
-  <a class="btn primary" href="{% url 'pedidos:produto_criar' %}">+ Novo produto</a>
+  <div class="row gap8">
+    <a class="btn ghost" href="{% url 'pedidos:categoria_lista' %}">Categorias</a>
+    <a class="btn primary" href="{% url 'pedidos:produto_criar' %}">+ Novo produto</a>
+  </div>
 </div>
 
 <div class="resumo">
@@ -54,6 +57,7 @@
       <thead>
         <tr>
           <th>Produto</th>
+          <th>Categoria</th>
           <th class="num">Preço</th>
           <th class="num">Estoque</th>
           <th>Situação</th>
@@ -64,6 +68,7 @@
         {% for p in produtos %}
           <tr {% if not p.ativo %}class="linha-inativa"{% endif %}>
             <td class="rel-produto">{{ p.nome }}</td>
+            <td>{% if p.categoria %}<span class="tag">{{ p.categoria.nome }}</span>{% else %}<span class="rel-quando">—</span>{% endif %}</td>
             <td class="num">R$ {{ p.preco|floatformat:2 }}</td>
             <td class="num">
               <span class="chip {% if not p.estoque %}zero{% endif %}">{{ p.estoque }}</span>

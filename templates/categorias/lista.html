@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Categorias{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:produto_lista' %}">← Produtos</a>
+<h1 class="rel-titulo">Categorias do cardápio</h1>
+<p class="rel-sub">As seções que o cliente vê. A ordem menor aparece primeiro.</p>
+
+<div class="cat-colunas">
+  <div class="card sem-padding">
+    <div class="tabela-wrap">
+      <table class="tabela">
+        <thead>
+          <tr><th class="num">Ordem</th><th>Categoria</th><th class="num">Produtos</th><th class="num">Ações</th></tr>
+        </thead>
+        <tbody>
+          {% for c in categorias %}
+            <tr>
+              <td class="num"><span class="chip">{{ c.ordem }}</span></td>
+              <td class="rel-produto">{{ c.nome }}</td>
+              <td class="num">{{ c.qtd }}</td>
+              <td class="num acoes">
+                <a class="btn ghost btn-pequeno" href="{% url 'pedidos:categoria_editar' c.pk %}">Editar</a>
+                <form method="post" action="{% url 'pedidos:categoria_excluir' c.pk %}"
+                      onsubmit="return confirm('Excluir “{{ c.nome }}”? Os {{ c.qtd }} produto(s) continuam cadastrados, só ficam sem categoria.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn ghost btn-pequeno perigo">Excluir</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="tabela-vazia">Nenhuma categoria ainda. Crie a primeira ao lado.</td></tr>
+          {% endfor %}
+          {% if sem_categoria %}
+            <tr class="cat-soltos">
+              <td class="num">—</td>
+              <td><i>Sem categoria</i></td>
+              <td class="num">{{ sem_categoria }}</td>
+              <td class="num"><small>aparecem em “Outros”, no fim do cardápio</small></td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <form method="post" class="card cat-nova">
+    {% csrf_token %}
+    <h2>Nova categoria</h2>
+    {% for campo in form %}
+      <div class="form-group">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+        {{ campo }}
+        {% if campo.help_text %}<small class="campo-ajuda">{{ campo.help_text }}</small>{% endif %}
+        {% for erro in campo.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+    <button class="btn primary" type="submit">Criar categoria</button>
+  </form>
+</div>
+{% endblock %}

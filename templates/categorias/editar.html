@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Editar {{ categoria.nome }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:categoria_lista' %}">← Categorias</a>
+<h1 class="rel-titulo">Editar categoria</h1>
+
+<form method="post" class="card form-produto">
+  {% csrf_token %}
+  {% for campo in form %}
+    <div class="form-group">
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+      {{ campo }}
+      {% if campo.help_text %}<small class="campo-ajuda">{{ campo.help_text }}</small>{% endif %}
+      {% for erro in campo.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+  {% endfor %}
+  <div class="row gap8" style="margin-top:18px;">
+    <button class="btn primary" type="submit">Salvar</button>
+    <a class="btn ghost" href="{% url 'pedidos:categoria_lista' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

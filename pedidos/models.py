@@ -6,8 +6,24 @@ from decimal import Decimal
 import uuid
 
 
+class Categoria(models.Model):
+    """Seção do cardápio: Lanches, Bebidas, Doces..."""
+    nome = models.CharField(max_length=60, unique=True)
+    ordem = models.PositiveIntegerField(default=0, help_text="Menor aparece primeiro no cardápio.")
+
+    class Meta:
+        ordering = ["ordem", "nome"]
+        verbose_name_plural = "categorias"
+
+    def __str__(self):
+        return self.nome
+
+
 class Produto(models.Model):
     nome = models.CharField(max_length=120, unique=True)
+    categoria = models.ForeignKey(
+        Categoria, null=True, blank=True, on_delete=models.SET_NULL, related_name="produtos"
+    )
     descricao = models.CharField(max_length=200, blank=True)
     foto = models.ImageField(upload_to="produtos/", blank=True, null=True)
     preco = models.DecimalField(max_digits=10, decimal_places=2)

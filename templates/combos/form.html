@@ -54,7 +54,10 @@
           {% for erro in f.quantidade.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
         </div>
         {% if formset.can_delete %}
-          <label class="combo-remover">{{ f.DELETE }} remover</label>
+          {# o checkbox é o que o Django entende; o botão é o que a pessoa vê #}
+          <span class="combo-delete" hidden>{{ f.DELETE }}</span>
+          <button type="button" class="btn ghost btn-pequeno perigo combo-remover"
+                  aria-label="Remover este produto do combo">Remover</button>
         {% endif %}
       </div>
     {% endfor %}
@@ -83,10 +86,40 @@
   const container = document.getElementById('itensCombo');
   const total = document.querySelector('[name$="-TOTAL_FORMS"]');
 
+  function visiveis() {
+    return [...container.querySelectorAll('.combo-linha')].filter(l => !l.hidden);
+  }
+
+  // com uma linha só, remover deixaria o combo vazio
+  function ajustarBotoes() {
+    const restantes = visiveis();
+    restantes.forEach(l => {
+      const botao = l.querySelector('.combo-remover');
+      if (botao) botao.disabled = restantes.length === 1;
+    });
+  }
+
+  function ligarRemover(linha) {
+    const botao = linha.querySelector('.combo-remover');
+    if (!botao) return;
+    botao.addEventListener('click', () => {
+      // marca o DELETE que o Django lê e tira a linha da frente
+      const del = linha.querySelector('.combo-delete input');
+      if (del) del.checked = true;
+      linha.hidden = true;
+      ajustarBotoes();
+      atualizarPrevia();
+    });
+  }
+
+  container.querySelectorAll('.combo-linha').forEach(ligarRemover);
+  ajustarBotoes();
+
   document.getElementById('addItem').addEventListener('click', () => {
     const n = parseInt(total.value, 10);
     const molde = container.querySelector('.combo-linha');
     const nova = molde.cloneNode(true);
+    nova.hidden = false;          // o molde pode ser uma linha já removida
     nova.querySelectorAll('input, select, label').forEach(el => {
       ['name', 'id', 'for'].forEach(attr => {
         const v = el.getAttribute(attr);
@@ -99,6 +132,8 @@
     });
     container.appendChild(nova);
     total.value = n + 1;
+    ligarRemover(nova);
+    ajustarBotoes();
     atualizarPrevia();
   });
 
@@ -110,7 +145,8 @@
   function atualizarPrevia() {
     let avulso = 0;
     container.querySelectorAll('.combo-linha').forEach(linha => {
-      const del = linha.querySelector('input[type=checkbox]');
+      if (linha.hidden) return;
+      const del = linha.querySelector('.combo-delete input');
       if (del && del.checked) return;
       const sel = linha.querySelector('select');
       const qtd = parseInt(linha.querySelector('input[type=number]')?.value || 0, 10);

@@ -8,11 +8,11 @@ from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 
 from . import carrinho as cart
-from .models import Produto, Combo, Pedido, PedidoItem, PedidoCombo
+from .models import Produto, Combo, Pedido, PedidoItem, PedidoCombo, Categoria
 
 
 def cardapio(request):
-    produtos = Produto.objects.filter(ativo=True).order_by("nome")
+    produtos = Produto.objects.filter(ativo=True).select_related("categoria").order_by("nome")
     combos = [
         c for c in Combo.objects.filter(ativo=True).prefetch_related("itens__produto").order_by("nome")
         if c.itens.exists()
@@ -24,14 +24,25 @@ def cardapio(request):
     # marca em cada item quanto já está no carrinho; o template não tem
     # como procurar numa chave de dicionário
     no_carrinho = {(l["tipo"], l["obj"].pk): l["qtd"] for l in resumo["linhas"]}
-    produtos = list(produtos)
+    produtos = list(produtos)   # precisa materializar para marcar e para agrupar
     for p in produtos:
         p.escolhido = no_carrinho.get(("produtos", p.pk), 0)
     for c in combos:
         c.escolhido = no_carrinho.get(("combos", c.pk), 0)
 
+    # agrupa na ordem definida em Categoria; quem não tem vai para "Outros",
+    # no fim, para nenhum produto sumir do cardápio
+    secoes = []
+    for cat in Categoria.objects.all():
+        itens = [p for p in produtos if p.categoria_id == cat.id]
+        if itens:
+            secoes.append({"id": f"cat-{cat.id}", "nome": cat.nome, "itens": itens})
+    soltos = [p for p in produtos if p.categoria_id is None]
+    if soltos:
+        secoes.append({"id": "cat-outros", "nome": "Outros" if secoes else "Itens", "itens": soltos})
+
     return render(request, "cardapio/cardapio.html", {
-        "produtos": produtos,
+        "secoes": secoes,
         "combos": combos,
         "resumo": resumo,
     })
