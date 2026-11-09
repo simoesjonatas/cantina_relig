@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Finalizar pedido{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:carrinho' %}">← Voltar ao carrinho</a>
+<h1 class="rel-titulo">Quase lá</h1>
+<p class="rel-sub">Só falta seu nome, pra gente chamar quando ficar pronto.</p>
+
+<div class="fin-colunas">
+  <form method="post" class="card fin-form">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="nome">Seu nome</label>
+      <input id="nome" type="text" name="nome_cliente" value="{{ nome_cliente }}"
+             placeholder="ex: Maria Clara" maxlength="120" autofocus required>
+    </div>
+
+    <div class="form-group">
+      <label>Onde vai comer</label>
+      <div class="consumo-escolha">
+        {% for valor, rotulo in consumos %}
+          <label class="consumo-opcao">
+            <input type="radio" name="consumo" value="{{ valor }}" {% if forloop.first %}checked{% endif %}>
+            <span>
+              {% if valor == "VIAGEM" %}{% include "partials/icone_viagem.html" %}{% else %}{% include "partials/icone_local.html" %}{% endif %}
+              {{ rotulo }}
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="obs">Alguma observação? <small>(opcional)</small></label>
+      <textarea id="obs" name="observacao" rows="3" placeholder="ex: sem cebola">{{ observacao }}</textarea>
+    </div>
+
+    <button class="btn primary fin-enviar" type="submit">Enviar pedido</button>
+    <p class="fin-aviso">Depois é só ir ao caixa pagar — o pedido já estará lá com seu nome.</p>
+  </form>
+
+  <aside class="card fin-resumo">
+    <h2>Seu pedido</h2>
+    <ul>
+      {% for l in resumo.linhas %}
+        <li>
+          <span><b>{{ l.qtd }}×</b> {{ l.nome }}</span>
+          <span>R$ {{ l.subtotal|floatformat:2 }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+    <div class="fin-total">
+      <span>Total</span>
+      <b>R$ {{ resumo.total|floatformat:2 }}</b>
+    </div>
+    <a class="fin-editar" href="{% url 'pedidos:carrinho' %}">Mudar alguma coisa</a>
+  </aside>
+</div>
+{% endblock %}

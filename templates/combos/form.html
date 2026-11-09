@@ -7,7 +7,7 @@
 <h1 class="rel-titulo">{% if combo %}Editar combo{% else %}Novo combo{% endif %}</h1>
 <p class="rel-sub">Escolha os produtos que entram e o preço fechado do conjunto.</p>
 
-<form method="post" class="card" id="comboForm">
+<form method="post" class="card" id="comboForm" enctype="multipart/form-data">
   {% csrf_token %}
 
   {% for erro in form.non_field_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}

@@ -13,7 +13,7 @@
   {% endif %}
 </p>
 
-<form method="post" class="card form-produto">
+<form method="post" class="card form-produto" enctype="multipart/form-data">
   {% csrf_token %}
 
   {% for erro in form.non_field_errors %}

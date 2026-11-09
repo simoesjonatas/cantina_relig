@@ -139,3 +139,6 @@ GitHub.sublime-settings
 
 # arquivos coletados pelo collectstatic
 /staticfiles/
+
+# fotos enviadas pelo sistema
+/media/

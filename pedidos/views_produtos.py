@@ -52,7 +52,7 @@ def produto_lista(request):
 @login_required
 def produto_criar(request):
     if request.method == "POST":
-        form = ProdutoForm(request.POST)
+        form = ProdutoForm(request.POST, request.FILES)
         if form.is_valid():
             with transaction.atomic():
                 produto = form.save()
@@ -71,7 +71,7 @@ def produto_editar(request, pk):
 
     if request.method == "POST":
         estoque_antes = produto.estoque
-        form = ProdutoForm(request.POST, instance=produto)
+        form = ProdutoForm(request.POST, request.FILES, instance=produto)
         if form.is_valid():
             with transaction.atomic():
                 produto = form.save()

@@ -24,15 +24,18 @@ class PedidoForm(ModelForm):
 class ProdutoForm(ModelForm):
     class Meta:
         model = Produto
-        fields = ["nome", "preco", "estoque", "ativo"]
+        fields = ["nome", "descricao", "foto", "preco", "estoque", "ativo"]
         labels = {
             "nome": "Nome do produto",
+            "descricao": "Descrição curta",
+            "foto": "Foto",
             "preco": "Preço (R$)",
             "estoque": "Quantidade em estoque",
             "ativo": "Disponível para venda",
         }
         widgets = {
             "nome": forms.TextInput(attrs={"placeholder": "ex: pastel de carne"}),
+            "descricao": forms.TextInput(attrs={"placeholder": "ex: massa fina, recheio de carne moída"}),
             "preco": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "estoque": forms.NumberInput(attrs={"min": "0"}),
         }
@@ -116,14 +119,17 @@ class UsuarioEditarForm(forms.ModelForm):
 class ComboForm(ModelForm):
     class Meta:
         model = Combo
-        fields = ["nome", "preco", "ativo"]
+        fields = ["nome", "descricao", "foto", "preco", "ativo"]
         labels = {
             "nome": "Nome do combo",
+            "descricao": "Descrição curta",
+            "foto": "Foto",
             "preco": "Preço do combo (R$)",
             "ativo": "Disponível para venda",
         }
         widgets = {
             "nome": forms.TextInput(attrs={"placeholder": "ex: Combo Bacon"}),
+            "descricao": forms.TextInput(attrs={"placeholder": "ex: o clássico da casa"}),
             "preco": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
         }
 

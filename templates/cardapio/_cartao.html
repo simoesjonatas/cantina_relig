@@ -1,0 +1,48 @@
+{# um item do cardápio: produto ou combo #}
+<article class="cd-card {% if not disponivel %}esgotado{% endif %}">
+  <div class="cd-foto">
+    {% if item.foto %}
+      <img src="{{ item.foto.url }}" alt="{{ item.nome }}" loading="lazy">
+    {% else %}
+      <span class="cd-sem-foto" aria-hidden="true">{% if combo %}🍔{% else %}🍽{% endif %}</span>
+    {% endif %}
+  </div>
+
+  <div class="cd-corpo">
+    <h3 class="cd-nome">{{ item.nome }}</h3>
+    {% if combo and item.economia > 0 %}
+      <span class="cd-selo">economize R$ {{ item.economia|floatformat:2 }}</span>
+    {% endif %}
+    {% if item.descricao %}
+      <p class="cd-desc">{{ item.descricao }}</p>
+    {% elif combo %}
+      <p class="cd-desc">{% for i in item.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+    {% endif %}
+
+    <div class="cd-rodape">
+      <span class="cd-preco">R$ {{ item.preco|floatformat:2 }}</span>
+
+      {% if disponivel %}
+        <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="cd-acao"
+              data-tipo="{{ tipo }}" data-pk="{{ item.pk }}">
+          {% csrf_token %}
+          <input type="hidden" name="tipo" value="{{ tipo }}">
+          <input type="hidden" name="pk" value="{{ item.pk }}">
+          <input type="hidden" name="voltar" value="{{ request.path }}">
+
+          <span class="cd-stepper" {% if not escolhido %}hidden{% endif %}>
+            <button type="submit" name="delta" value="-1" class="qty-btn" aria-label="Tirar um">−</button>
+            <b class="cd-qtd">{{ escolhido|default:0 }}</b>
+            <button type="submit" name="delta" value="1" class="qty-btn" aria-label="Mais um">+</button>
+          </span>
+
+          <button type="submit" name="delta" value="1" class="btn primary cd-add" {% if escolhido %}hidden{% endif %}>
+            Adicionar
+          </button>
+        </form>
+      {% else %}
+        <span class="tag tag-bloqueado">Esgotado</span>
+      {% endif %}
+    </div>
+  </div>
+</article>

@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import views_estoque
 from . import views_cliente
+from . import views_cardapio
 from . import views_painel
 from . import views_produtos
 from . import views_combos
@@ -52,6 +53,12 @@ urlpatterns = [
     path("estoque/saidas/", views_estoque.saidas_por_produto, name="saidas-por-produto"),
     path("estoque/saidas/<int:produto_id>/", views_estoque.saidas_do_produto_detail, name="saidas-do-produto-detail"),
 
+
+    # Cardápio público (cliente monta o carrinho sem login)
+    path("cardapio/", views_cardapio.cardapio, name="cardapio"),
+    path("cardapio/adicionar/", views_cardapio.cardapio_adicionar, name="cardapio_adicionar"),
+    path("cardapio/carrinho/", views_cardapio.carrinho_ver, name="carrinho"),
+    path("cardapio/finalizar/", views_cardapio.finalizar, name="cardapio_finalizar"),
 
     # Cliente
     # Fluxo do cliente (sem login)

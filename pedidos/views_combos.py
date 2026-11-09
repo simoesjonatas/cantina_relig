@@ -33,7 +33,7 @@ def combo_lista(request):
 
 def _salvar(request, combo=None):
     if request.method == "POST":
-        form = ComboForm(request.POST, instance=combo)
+        form = ComboForm(request.POST, request.FILES, instance=combo)
         formset = ComboItemFormSet(request.POST, instance=combo)
         if form.is_valid() and formset.is_valid():
             with transaction.atomic():

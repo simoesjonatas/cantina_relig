@@ -128,6 +128,13 @@ LOGOUT_REDIRECT_URL = "/"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# Arquivos enviados pelo sistema (fotos de produto).
+# Sem definir isso, MEDIA_URL fica "/" e MEDIA_ROOT "", e o static() do
+# urls.py vira uma rota curinga que serve a pasta do projeto inteira —
+# .env e db.sqlite3 incluídos.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"         # coletados (collectstatic) vão aqui
 STATICFILES_DIRS = [BASE_DIR / "static"]       # seus arquivos de dev, se existir

@@ -8,6 +8,8 @@ import uuid
 
 class Produto(models.Model):
     nome = models.CharField(max_length=120, unique=True)
+    descricao = models.CharField(max_length=200, blank=True)
+    foto = models.ImageField(upload_to="produtos/", blank=True, null=True)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     estoque = models.PositiveIntegerField(default=0)
     ativo = models.BooleanField(default=True)
@@ -22,6 +24,8 @@ class Produto(models.Model):
 class Combo(models.Model):
     """Conjunto de produtos vendido por um preço fechado, menor que a soma."""
     nome = models.CharField(max_length=120, unique=True)
+    descricao = models.CharField(max_length=200, blank=True)
+    foto = models.ImageField(upload_to="combos/", blank=True, null=True)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)

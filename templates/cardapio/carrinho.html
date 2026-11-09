@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Seu carrinho{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:cardapio' %}">← Continuar escolhendo</a>
+<h1 class="rel-titulo">Seu carrinho</h1>
+
+{% if resumo.linhas %}
+  <div class="card sem-padding">
+    <ul class="ca-lista">
+      {% for l in resumo.linhas %}
+        <li class="ca-linha">
+          <div class="ca-foto">
+            {% if l.foto %}<img src="{{ l.foto.url }}" alt="">{% else %}<span aria-hidden="true">{% if l.tipo == "combos" %}🍔{% else %}🍽{% endif %}</span>{% endif %}
+          </div>
+          <div class="ca-info">
+            <b>{{ l.nome }}</b>
+            {% if l.tipo == "combos" %}
+              <small>{% for i in l.obj.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+            {% endif %}
+            <small>R$ {{ l.unit|floatformat:2 }} cada</small>
+          </div>
+
+          <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="ca-qtd">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="{{ l.tipo }}">
+            <input type="hidden" name="pk" value="{{ l.obj.pk }}">
+            <input type="hidden" name="voltar" value="{{ request.path }}">
+            <button type="submit" name="delta" value="-1" class="qty-btn" aria-label="Tirar um">−</button>
+            <b>{{ l.qtd }}</b>
+            <button type="submit" name="delta" value="1" class="qty-btn" aria-label="Mais um"
+                    {% if l.qtd >= l.teto %}disabled title="No limite do estoque"{% endif %}>+</button>
+          </form>
+
+          <div class="ca-subtotal">R$ {{ l.subtotal|floatformat:2 }}</div>
+
+          <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="ca-remover">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="{{ l.tipo }}">
+            <input type="hidden" name="pk" value="{{ l.obj.pk }}">
+            <input type="hidden" name="quantidade" value="0">
+            <input type="hidden" name="voltar" value="{{ request.path }}">
+            <button type="submit" class="btn ghost btn-pequeno perigo">Remover</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <div class="ca-total">
+      <span>Total</span>
+      <b>R$ {{ resumo.total|floatformat:2 }}</b>
+    </div>
+  </div>
+
+  <div class="row gap8 ca-acoes">
+    <a class="btn primary ca-finalizar" href="{% url 'pedidos:cardapio_finalizar' %}">Finalizar pedido →</a>
+    <a class="btn ghost" href="{% url 'pedidos:cardapio' %}">Continuar escolhendo</a>
+  </div>
+{% else %}
+  <div class="card tabela-vazia">
+    Seu carrinho está vazio.
+    <a href="{% url 'pedidos:cardapio' %}">Ver o cardápio</a>.
+  </div>
+{% endif %}
+{% endblock %}
