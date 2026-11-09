@@ -100,6 +100,15 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
     }
 
+    .viagem {
+      flex-shrink: 0;
+      font-size: clamp(13px, 1.3vw, 22px); font-weight: 800;
+      padding: clamp(3px, .5vh, 7px) clamp(8px, .9vw, 14px); border-radius: 999px;
+      background: rgba(240, 160, 32, .18); color: var(--preparo);
+      border: 1px solid rgba(240, 160, 32, .45);
+    }
+    .coluna.pronto .viagem { background: rgba(240, 160, 32, .22); }
+
     /* pedido que acabou de ficar pronto: pisca e chama atenção */
     .lista li.novo { animation: entrar .35s ease-out, piscar 1s ease-in-out 6; }
     @keyframes entrar { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
@@ -200,6 +209,15 @@
       nome.title = pedido.numero || '';
 
       li.append(senha, nome);
+
+      if (pedido.viagem) {
+        const etiqueta = document.createElement('span');
+        etiqueta.className = 'viagem';
+        etiqueta.textContent = '🛍️ viagem';
+        etiqueta.title = 'Para viagem';
+        li.append(etiqueta);
+      }
+
       return li;
     }
 

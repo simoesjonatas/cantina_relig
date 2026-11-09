@@ -73,6 +73,7 @@
             <td class="rel-numero">{{ p.numero }}</td>
             <td class="rel-produto">
               {{ p.nome_cliente }}
+              {% with pedido=p %}{% include "partials/tag_consumo.html" %}{% endwith %}
               {% if p.observacao %}<span class="marca-obs" title="{{ p.observacao }}">obs</span>{% endif %}
             </td>
             <td><span class="status status-{{ p.status }}">{{ p.get_status_display }}</span></td>

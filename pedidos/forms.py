@@ -8,10 +8,18 @@ from .models import Pedido, PedidoItem, Produto
 class PedidoForm(ModelForm):
     class Meta:
         model = Pedido
-        fields = ["nome_cliente", "observacao"]
+        fields = ["nome_cliente", "consumo", "observacao"]
+        labels = {"consumo": "Onde vai comer"}
         widgets = {
+            "consumo": forms.RadioSelect,
             "observacao": forms.Textarea(attrs={"rows": 3, "placeholder": "Observações..."}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # o padrão é comer no local
+        self.fields["consumo"].initial = Pedido.Consumo.LOCAL
+        self.fields["consumo"].empty_label = None
 
 class ProdutoForm(ModelForm):
     class Meta:

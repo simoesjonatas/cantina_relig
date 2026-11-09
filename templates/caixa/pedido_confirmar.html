@@ -6,7 +6,7 @@
 
 <div class="card" style="margin-bottom:16px;">
   <div><strong>Cliente:</strong> {{ pedido.nome_cliente }}</div>
-  <div><strong>Status:</strong> {{ pedido.get_status_display }}</div>
+  <div><strong>Status:</strong> {{ pedido.get_status_display }} {% include "partials/tag_consumo.html" %}</div>
   <div><strong>Total:</strong> R$ {{ total|floatformat:2 }}</div>
 </div>
 

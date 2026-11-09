@@ -52,7 +52,8 @@
                   <a href="{% url 'pedidos:detalhe' p.id %}">
 
                     <strong>Pedido {{ p.numero }}</strong><br>
-                    Cliente: {{ p.nome_cliente }}<br>
+                    Cliente: {{ p.nome_cliente }}
+                    {% with pedido=p %}{% include "partials/tag_consumo.html" %}{% endwith %}<br>
                     Total: <strong>R$ {{ p.total|floatformat:2 }}</strong>
                   </a>
                 </div>

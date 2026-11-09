@@ -19,6 +19,10 @@ class Produto(models.Model):
         return f"{self.nome} (R$ {self.preco})"
 
 class Pedido(models.Model):
+    class Consumo(models.TextChoices):
+        LOCAL = "LOCAL", "Comer no local"
+        VIAGEM = "VIAGEM", "Para viagem"
+
     class Status(models.TextChoices):
         RASCUNHO = "RASC", "Rascunho"
         PAGAMENTO = "AGPG", "Aguardando Pagamento"
@@ -28,6 +32,7 @@ class Pedido(models.Model):
 
     numero = models.CharField(max_length=20, unique=True, blank=True)  # gerado no save
     nome_cliente = models.CharField(max_length=120)
+    consumo = models.CharField(max_length=6, choices=Consumo.choices, default=Consumo.LOCAL)
     observacao = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=4, choices=Status.choices, default=Status.RASCUNHO)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -44,6 +49,10 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"{self.numero or '(sem número)'} - {self.nome_cliente}"
+
+    @property
+    def e_viagem(self):
+        return self.consumo == self.Consumo.VIAGEM
 
     def gerar_numero(self):
         hoje = timezone.localdate().strftime("%Y%m%d")

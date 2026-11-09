@@ -36,6 +36,21 @@
   </section>
 
   <div class="form-group" style="margin-top:8px;">
+    <label>Onde vai comer</label>
+    <div class="consumo-escolha">
+      {% for opcao in form.consumo %}
+        <label class="consumo-opcao">
+          {{ opcao.tag }}
+          <span>
+            {% if opcao.data.value == "VIAGEM" %}<span aria-hidden="true">🛍️</span>{% else %}<span aria-hidden="true">🍽️</span>{% endif %}
+            {{ opcao.choice_label }}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-group" style="margin-top:8px;">
     <label for="{{ form.observacao.id_for_label }}">Observação</label>
     {{ form.observacao }}
   </div>

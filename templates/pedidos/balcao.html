@@ -12,7 +12,10 @@
     {% for pedido in prontos %}
       <li class="b-item card">
         <div class="b-info">
-          <span class="b-nome">{{ pedido.nome_cliente }}</span>
+          <span class="b-nome">
+            {{ pedido.nome_cliente }}
+            {% include "partials/tag_consumo.html" %}
+          </span>
           <span class="b-meta">
             #{{ pedido.numero }} · pronto às {{ pedido.finalizado_em|date:"H:i" }}
             <b class="b-espera" data-desde="{{ pedido.finalizado_em|date:'c' }}"></b>

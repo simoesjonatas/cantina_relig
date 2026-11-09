@@ -412,3 +412,34 @@ table th { color: var(--muted); font-weight: 600; }
   background: #f2f2f8; border: 1px solid var(--border);
   border-radius: 6px; padding: 1px 6px; font-size: 13px;
 }
+
+/* --- Comer no local x para viagem --- */
+.consumo-escolha { display: flex; gap: 10px; flex-wrap: wrap; }
+.consumo-opcao { flex: 1 1 160px; cursor: pointer; }
+.consumo-opcao input { position: absolute; opacity: 0; width: 0; height: 0; }
+.consumo-opcao > span {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px;
+  background: #fff; font-weight: 600; text-align: center;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.consumo-opcao:hover > span { border-color: var(--primary); }
+.consumo-opcao input:checked + span {
+  border-color: var(--primary); background: rgba(108, 92, 231, .10); color: var(--primary);
+}
+.consumo-opcao input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .consumo-opcao > span { transition: none; } }
+
+/* etiqueta de "para viagem" nas demais telas */
+.tag-viagem {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 800; letter-spacing: .3px;
+  background: #fff1e6; color: #a4420a; border: 1px solid #ffd2ad;
+}
+.tag-local {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  background: #eef0f5; color: var(--muted); border: 1px solid var(--border);
+}

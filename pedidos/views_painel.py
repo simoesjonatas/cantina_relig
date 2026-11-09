@@ -27,6 +27,7 @@ def _serializar(pedidos) -> list[dict]:
             "nome": p.nome_cliente,
             "numero": p.numero,
             "curto": _numero_curto(p.numero),
+            "viagem": p.e_viagem,
         }
         for p in pedidos
     ]

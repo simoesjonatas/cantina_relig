@@ -22,7 +22,10 @@
       <article class="k-card card" data-created="{{ comanda.pedido.criado_em|date:'c' }}">
         <header class="row" style="justify-content:space-between; align-items:flex-start;">
           <div>
-            <div class="k-numero">#{{ comanda.pedido.numero }}</div>
+            <div class="k-numero">
+              #{{ comanda.pedido.numero }}
+              {% with pedido=comanda.pedido %}{% include "partials/tag_consumo.html" %}{% endwith %}
+            </div>
             <div class="k-cliente"><strong>Cliente:</strong> {{ comanda.pedido.nome_cliente }}</div>
             {% if comanda.pedido.observacao %}
               <div class="k-observacao" style="margin-top:6px; color:var(--muted);">
