@@ -28,6 +28,10 @@
 <form method="post" id="pedidoForm" class="card">
   {% csrf_token %}
 
+  {% for erro in form.non_field_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+  {% for erro in formset.non_form_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+  {% for erro in formset_combos.non_form_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+
   <section class="grid2">
     <div class="form-group">
       <label for="{{ form.nome_cliente.id_for_label }}">Nome do cliente</label>
@@ -132,9 +136,15 @@
     <button type="submit" class="btn primary">Salvar Rascunho</button>
   </div>
 
+  {% comment %}
+    O management_form fica FORA do {% if combos %}: sem ele no POST o
+    formset é considerado adulterado, o formulário volta sem salvar e sem
+    erro visível. Acontecia sempre que não havia combo cadastrado.
+  {% endcomment %}
+  {{ formset_combos.management_form }}
+
   {% if combos %}
     <h2 class="mb8" style="margin-top:20px;">Combos</h2>
-    {{ formset_combos.management_form }}
     <div class="combo-oferta">
       {% for c in combos %}
         <label class="combo-escolha {% if not c.quantos_cabem %}esgotado{% endif %}">
