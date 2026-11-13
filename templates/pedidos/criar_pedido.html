@@ -156,23 +156,6 @@
               <span class="combo-escolha-preco">R$ {{ c.preco|floatformat:2 }}</span>
             </span>
             <small>{% for i in c.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
-            {% if c.escolhas.all %}
-              <span class="combo-escolhas-campos">
-                {% for e in c.escolhas.all %}
-                  <label class="combo-escolha-campo">
-                    <span>{{ e.nome }}{% if e.quantidade > 1 %} ({{ e.quantidade }}×){% endif %}</span>
-                    <select class="combo-opcao" data-escolha="{{ e.pk }}">
-                      <option value="">escolha…</option>
-                      {% for o in e.opcoes.all %}
-                        <option value="{{ o.produto_id }}" {% if not o.quantos_cabem %}disabled{% endif %}>
-                          {{ o.produto.nome }}{% if o.adicional %} (+R$ {{ o.adicional|floatformat:2 }}){% endif %}{% if not o.quantos_cabem %} — esgotado{% endif %}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </label>
-                {% endfor %}
-              </span>
-            {% endif %}
             {% if c.quantos_cabem %}
               {% if c.economia > 0 %}<span class="combo-economia">economiza R$ {{ c.economia|floatformat:2 }}</span>{% endif %}
             {% else %}
@@ -184,6 +167,32 @@
                      {% if c.quantos_cabem %}max="{{ c.quantos_cabem }}"{% endif %}>
               <button type="button" class="qty-btn" data-passo="1">+</button>
             </span>
+            {% if c.escolhas.all %}
+              {% comment %}
+                Três combos podem levar três bebidas diferentes, então o bloco
+                de escolhas se repete uma vez por unidade. O JS clona este
+                molde conforme a quantidade.
+              {% endcomment %}
+              <template class="combo-molde">
+                <span class="combo-unidade">
+                  <b class="combo-unidade-rotulo" hidden></b>
+                  {% for e in c.escolhas.all %}
+                    <label class="combo-escolha-campo">
+                      <span>{{ e.nome }}{% if e.quantidade > 1 %} ({{ e.quantidade }}×){% endif %}</span>
+                      <select class="combo-opcao" data-escolha="{{ e.pk }}">
+                        <option value="">escolha…</option>
+                        {% for o in e.opcoes.all %}
+                          <option value="{{ o.produto_id }}" {% if not o.quantos_cabem %}disabled{% endif %}>
+                            {{ o.produto.nome }}{% if o.adicional %} (+R$ {{ o.adicional|floatformat:2 }}){% endif %}{% if not o.quantos_cabem %} — esgotado{% endif %}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                  {% endfor %}
+                </span>
+              </template>
+              <span class="combo-unidades" hidden></span>
+            {% endif %}
           </span>
         </label>
       {% endfor %}
@@ -333,30 +342,80 @@
     const total = document.querySelector('[name="combos-TOTAL_FORMS"]');
 
     // "3=12,4=20": escolha 3 = produto 12. Mesmo formato do carrinho.
-    function escolhasDoCartao(cartao) {
-      return [...cartao.querySelectorAll('.combo-opcao')]
+    function escolhasDaUnidade(unidade) {
+      return [...unidade.querySelectorAll('.combo-opcao')]
         .filter(s => s.value)
         .map(s => `${s.dataset.escolha}=${s.value}`)
         .join(',');
     }
-    window.escolhasDoCartao = escolhasDoCartao;
+
+    function quantidadeDo(cartao) {
+      return parseInt(cartao.querySelector('.combo-qtd-input').value, 10) || 1;
+    }
+
+    // Uma caixa de escolhas por unidade pedida: dois combos podem levar
+    // bebidas diferentes.
+    function sincronizarUnidades(cartao) {
+      const molde = cartao.querySelector('.combo-molde');
+      if (!molde) return;
+      const caixa = cartao.querySelector('.combo-unidades');
+      const marcado = cartao.querySelector('.combo-check').checked;
+      const alvo = marcado ? quantidadeDo(cartao) : 0;
+
+      while (caixa.children.length > alvo) caixa.lastElementChild.remove();
+      while (caixa.children.length < alvo) {
+        const anterior = caixa.lastElementChild;
+        const nova = molde.content.firstElementChild.cloneNode(true);
+        caixa.appendChild(nova);
+        // a unidade nova começa igual à anterior: quase sempre é o que se
+        // quer, e quem vai variar mexe só na que precisa mudar
+        if (anterior) {
+          const antes = [...anterior.querySelectorAll('.combo-opcao')];
+          [...nova.querySelectorAll('.combo-opcao')].forEach((s, i) => {
+            if (antes[i]) s.value = antes[i].value;
+          });
+        }
+      }
+
+      caixa.hidden = alvo === 0;
+      [...caixa.children].forEach((unidade, i) => {
+        const rotulo = unidade.querySelector('.combo-unidade-rotulo');
+        rotulo.textContent = `${i + 1}º`;
+        rotulo.hidden = alvo < 2;   // com um só, numerar é ruído
+      });
+    }
+
+    // Combinações iguais viram uma linha só com a quantidade somada; cada
+    // combinação diferente vira a sua própria linha do formset.
+    function gruposDoCartao(cartao) {
+      const unidades = [...cartao.querySelectorAll('.combo-unidade')];
+      if (!unidades.length) return [['', quantidadeDo(cartao)]];
+      const contagem = new Map();
+      unidades.forEach(u => {
+        const chave = escolhasDaUnidade(u);
+        contagem.set(chave, (contagem.get(chave) || 0) + 1);
+      });
+      return [...contagem.entries()];
+    }
 
     function regravar() {
+      document.querySelectorAll('.combo-escolha').forEach(sincronizarUnidades);
       ocultos.replaceChildren();
       let n = 0;
       document.querySelectorAll('.combo-check').forEach(chk => {
         if (!chk.checked) return;
         const cartao = chk.closest('.combo-escolha');
-        const qtd = cartao.querySelector('.combo-qtd-input').value || 1;
-        const escolhas = escolhasDoCartao(cartao);
-        [['combo', chk.dataset.combo], ['quantidade', qtd], ['escolhas', escolhas], ['id', '']].forEach(([campo, valor]) => {
-          const i = document.createElement('input');
-          i.type = 'hidden';
-          i.name = `combos-${n}-${campo}`;
-          i.value = valor;
-          ocultos.appendChild(i);
+        gruposDoCartao(cartao).forEach(([escolhas, quantidade]) => {
+          [['combo', chk.dataset.combo], ['quantidade', quantidade],
+           ['escolhas', escolhas], ['id', '']].forEach(([campo, valor]) => {
+            const i = document.createElement('input');
+            i.type = 'hidden';
+            i.name = `combos-${n}-${campo}`;
+            i.value = valor;
+            ocultos.appendChild(i);
+          });
+          n++;
         });
-        n++;
       });
       total.value = n;
     }
@@ -374,10 +433,10 @@
 
       // o label inteiro é clicável; o select dentro dele não pode
       // marcar/desmarcar o combo sem querer
-      const campos = cartao.querySelector('.combo-escolhas-campos');
-      if (campos) {
-        campos.addEventListener('click', (e) => e.preventDefault());
-        campos.addEventListener('change', regravar);
+      const unidades = cartao.querySelector('.combo-unidades');
+      if (unidades) {
+        unidades.addEventListener('click', (e) => e.preventDefault());
+        unidades.addEventListener('change', regravar);
       }
 
       cartao.querySelectorAll('.qty-btn').forEach(b => {
@@ -445,21 +504,25 @@
           consumo[parte.produto] = (consumo[parte.produto] || 0) + parte.qtd * vezes;
         });
 
-        (combo.escolhas || []).forEach(escolha => {
-          const campo = cartao.querySelector(`.combo-opcao[data-escolha="${escolha.id}"]`);
-          const escolhido = campo && campo.value;
-          if (!escolhido) { semEscolha++; return; }
-          const opcao = escolha.opcoes.find(o => o.produto === escolhido);
-          (opcao ? opcao.partes : []).forEach(parte => {
-            consumo[parte.produto] =
-              (consumo[parte.produto] || 0) + parte.qtd * escolha.quantidade * vezes;
+        // cada unidade pedida tem a própria bebida, então a conta é por
+        // unidade e não "× quantidade"
+        const unidades = [...cartao.querySelectorAll('.combo-unidade')];
+        unidades.forEach(unidade => {
+          (combo.escolhas || []).forEach(escolha => {
+            const campo = unidade.querySelector(`.combo-opcao[data-escolha="${escolha.id}"]`);
+            const escolhido = campo && campo.value;
+            if (!escolhido) { semEscolha++; return; }
+            const opcao = escolha.opcoes.find(o => o.produto === escolhido);
+            (opcao ? opcao.partes : []).forEach(parte => {
+              consumo[parte.produto] =
+                (consumo[parte.produto] || 0) + parte.qtd * escolha.quantidade;
+            });
           });
         });
 
-        cartao.classList.toggle('falta-escolha', !!(combo.escolhas || []).some(e => {
-          const campo = cartao.querySelector(`.combo-opcao[data-escolha="${e.id}"]`);
-          return !(campo && campo.value);
-        }));
+        cartao.classList.toggle('falta-escolha', unidades.some(
+          u => [...u.querySelectorAll('.combo-opcao')].some(s => !s.value)
+        ));
       });
 
       // quem estourou

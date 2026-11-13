@@ -880,3 +880,11 @@ table th { color: var(--muted); font-weight: 600; }
 /* escolhas na listagem de combos */
 .combo-escolha-linha small { color: var(--muted); }
 .combo-opcoes { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; }
+
+/* uma caixa de escolhas por unidade do combo, na tela de montar pedido */
+.combo-unidades { display: grid; gap: 8px; margin-top: 6px; }
+.combo-unidade {
+  display: grid; gap: 6px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card);
+}
+.combo-unidade-rotulo { font-size: 12px; color: var(--muted); }

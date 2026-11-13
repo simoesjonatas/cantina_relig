@@ -306,3 +306,34 @@ class TelasTest(TestCase):
         pc = pedido.combos.get()
         self.assertEqual(pc.escolhas.get().produto, self.zero)
         self.assertEqual(pc.preco_unitario, Decimal("22.90"))  # 21,90 + 1,00 da ZERO
+
+    def test_balcao_manda_duas_bebidas_no_mesmo_combo(self):
+        """Dois combos iguais no balcão, cada um com a sua bebida."""
+        self.client.force_login(self.staff)
+        resposta = self.client.post("/pedidos/novo/", {
+            "nome_cliente": "Lia", "consumo": "LOCAL", "observacao": "",
+            "itens-TOTAL_FORMS": "0", "itens-INITIAL_FORMS": "0",
+            "itens-MIN_NUM_FORMS": "0", "itens-MAX_NUM_FORMS": "1000",
+            "combos-TOTAL_FORMS": "2", "combos-INITIAL_FORMS": "0",
+            "combos-MIN_NUM_FORMS": "0", "combos-MAX_NUM_FORMS": "1000",
+            "combos-0-combo": str(self.combo.pk), "combos-0-quantidade": "2",
+            "combos-0-escolhas": f"{self.bebida.pk}={self.coca.pk}",
+            "combos-1-combo": str(self.combo.pk), "combos-1-quantidade": "1",
+            "combos-1-escolhas": f"{self.bebida.pk}={self.zero.pk}",
+        })
+        self.assertEqual(resposta.status_code, 302)
+
+        pedido = Pedido.objects.get(nome_cliente="Lia")
+        self.assertEqual(pedido.combos.count(), 2)
+        escolhido = {pc.quantidade: pc.escolhas.get().produto.nome for pc in pedido.combos.all()}
+        self.assertEqual(escolhido, {2: "Coca-Cola", 1: "Coca ZERO"})
+        # 2 × 21,90 + 1 × 22,90 (a ZERO cobra R$ 1,00 a mais)
+        self.assertEqual(pedido.total, Decimal("66.70"))
+
+        confirmar_pedido(pedido.id)
+        self.coca.refresh_from_db()
+        self.zero.refresh_from_db()
+        self.disco.refresh_from_db()
+        self.assertEqual(self.coca.estoque, 3)
+        self.assertEqual(self.zero.estoque, 4)
+        self.assertEqual(self.disco.estoque, 20 - 6)   # 3 combos × 1 duplo × 2 discos
