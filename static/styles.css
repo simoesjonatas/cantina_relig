@@ -817,3 +817,66 @@ table th { color: var(--muted); font-weight: 600; }
 .est-alerta ul { margin: 6px 0 0; padding-left: 20px; }
 .est-alerta li { margin-top: 2px; }
 .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* ===== ficha técnica e escolhas do combo ================================= */
+
+/* um display: block numa classe vence o atributo hidden do HTML, e a dica
+   ficava na tela mesmo escondida pelo JS */
+[hidden] { display: none !important; }
+
+/* ajuda curta embaixo de um campo */
+.ajuda-campo { color: var(--muted); font-size: 12px; margin-top: 4px; display: block; }
+
+/* prévia da imagem já salva, no formulário */
+.foto-atual { margin-bottom: 8px; }
+.foto-atual img {
+  max-width: 160px; max-height: 120px; border-radius: 10px;
+  border: 1px solid var(--border); display: block; object-fit: cover;
+}
+
+/* produto que só entra na ficha de outro */
+.tag-insumo { background: #fff4e5; color: #9a5b00; }
+.rel-ficha { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+/* o que o cliente escolheu, repetido nas telas de pedido */
+.linha-escolha, .ca-escolha, .fin-escolha, .k-escolha {
+  display: block; color: var(--muted); font-size: 12px; margin-top: 2px;
+}
+.k-escolha b { color: var(--text); }
+
+/* lista de escolhas na tela do combo */
+.escolha-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.escolha-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg);
+}
+.escolha-item small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+@media (max-width: 620px) {
+  .escolha-item { flex-direction: column; align-items: flex-start; }
+}
+
+/* escolhas dentro do cartão do cardápio */
+.cd-escolhas { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.cd-escolha { display: flex; flex-direction: column; gap: 3px; }
+.cd-escolha-rotulo { font-size: 12px; color: var(--muted); font-weight: 600; }
+.cd-escolha select {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--card); font-size: 14px; color: var(--text);
+}
+.cd-no-carrinho { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+/* escolhas na tela de montar pedido (balcão) */
+.combo-escolhas-campos { display: grid; gap: 6px; margin-top: 6px; }
+.combo-escolha-campo { display: flex; flex-direction: column; gap: 2px; }
+.combo-escolha-campo > span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.combo-escolha-campo select {
+  padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); font-size: 14px; color: var(--text);
+}
+.combo-escolha.falta-escolha { outline: 2px solid var(--danger); outline-offset: 2px; }
+.combo-escolha.falta-escolha select:not(:valid),
+.combo-escolha.falta-escolha select[value=""] { border-color: var(--danger); }
+
+/* escolhas na listagem de combos */
+.combo-escolha-linha small { color: var(--muted); }
+.combo-opcoes { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; }

@@ -19,6 +19,9 @@
             <b>{{ l.nome }}</b>
             {% if l.tipo == "combos" %}
               <small>{% for i in l.obj.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+              {% for e in l.escolhas %}
+                <small class="ca-escolha">{{ e.rotulo }}: <b>{{ e.produto.nome }}</b></small>
+              {% endfor %}
             {% endif %}
             <small>R$ {{ l.unit|floatformat:2 }} cada</small>
           </div>
@@ -26,7 +29,8 @@
           <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="ca-qtd">
             {% csrf_token %}
             <input type="hidden" name="tipo" value="{{ l.tipo }}">
-            <input type="hidden" name="pk" value="{{ l.obj.pk }}">
+            <input type="hidden" name="chave" value="{{ l.chave }}">
+            <input type="hidden" name="pk" value="{{ l.chave }}">
             <input type="hidden" name="voltar" value="{{ request.path }}">
             <button type="submit" name="delta" value="-1" class="qty-btn" aria-label="Tirar um">−</button>
             <b>{{ l.qtd }}</b>
@@ -39,7 +43,8 @@
           <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="ca-remover">
             {% csrf_token %}
             <input type="hidden" name="tipo" value="{{ l.tipo }}">
-            <input type="hidden" name="pk" value="{{ l.obj.pk }}">
+            <input type="hidden" name="chave" value="{{ l.chave }}">
+            <input type="hidden" name="pk" value="{{ l.chave }}">
             <input type="hidden" name="quantidade" value="0">
             <input type="hidden" name="voltar" value="{{ request.path }}">
             <button type="submit" class="btn ghost btn-pequeno perigo">Remover</button>

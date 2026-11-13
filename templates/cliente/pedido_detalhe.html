@@ -53,7 +53,10 @@
     <tbody>
       {% for it in itens %}
       <tr style="border-top:1px solid var(--border);">
-        <td style="padding:8px;">{{ it.nome }}</td>
+        <td style="padding:8px;">
+          {{ it.nome }}
+          {% for e in it.escolhas %}<small class="linha-escolha">{{ e.rotulo }}: {{ e.produto.nome }}</small>{% endfor %}
+        </td>
         <td style="padding:8px; text-align:right;">{{ it.qtd }}</td>
         <td style="padding:8px; text-align:right;">R$ {{ it.unit|floatformat:2 }}</td>
         <td style="padding:8px; text-align:right;"><strong>R$ {{ it.subtotal|floatformat:2 }}</strong></td>

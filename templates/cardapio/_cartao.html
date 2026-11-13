@@ -16,33 +16,74 @@
     {% if item.descricao %}
       <p class="cd-desc">{{ item.descricao }}</p>
     {% elif combo %}
-      <p class="cd-desc">{% for i in item.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+      <p class="cd-desc">
+        {% for i in item.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        {% for e in item.escolhas.all %}{% if item.itens.all or not forloop.first %} · {% endif %}{{ e.nome }} à escolha{% endfor %}
+      </p>
     {% endif %}
 
-    <div class="cd-rodape">
-      <span class="cd-preco">R$ {{ item.preco|floatformat:2 }}</span>
+    {% if combo and item.tem_escolhas and disponivel %}
+      {% comment %}
+        Combo com bebida (ou outra opção) a escolher: cada combinação vira uma
+        linha própria no carrinho, então aqui é sempre "Adicionar".
+      {% endcomment %}
+      <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="cd-escolhas">
+        {% csrf_token %}
+        <input type="hidden" name="tipo" value="combos">
+        <input type="hidden" name="pk" value="{{ item.pk }}">
+        <input type="hidden" name="voltar" value="{{ request.path }}">
+        <input type="hidden" name="delta" value="1">
 
-      {% if disponivel %}
-        <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="cd-acao"
-              data-tipo="{{ tipo }}" data-pk="{{ item.pk }}">
-          {% csrf_token %}
-          <input type="hidden" name="tipo" value="{{ tipo }}">
-          <input type="hidden" name="pk" value="{{ item.pk }}">
-          <input type="hidden" name="voltar" value="{{ request.path }}">
+        {% for e in item.escolhas.all %}
+          <label class="cd-escolha">
+            <span class="cd-escolha-rotulo">
+              {{ e.nome }}{% if e.quantidade > 1 %} ({{ e.quantidade }}×){% endif %}
+            </span>
+            <select name="escolha_{{ e.pk }}" required>
+              <option value="">escolha…</option>
+              {% for o in e.opcoes.all %}
+                <option value="{{ o.produto_id }}" {% if not o.quantos_cabem %}disabled{% endif %}>
+                  {{ o.produto.nome }}{% if o.adicional %} (+R$ {{ o.adicional|floatformat:2 }}){% endif %}{% if not o.quantos_cabem %} — esgotado{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endfor %}
 
-          <span class="cd-stepper" {% if not escolhido %}hidden{% endif %}>
-            <button type="submit" name="delta" value="-1" class="qty-btn" aria-label="Tirar um">−</button>
-            <b class="cd-qtd">{{ escolhido|default:0 }}</b>
-            <button type="submit" name="delta" value="1" class="qty-btn" aria-label="Mais um">+</button>
+        <div class="cd-rodape">
+          <span class="cd-preco">R$ {{ item.preco|floatformat:2 }}</span>
+          <span class="row gap8">
+            {% if escolhido %}<small class="cd-no-carrinho">{{ escolhido }} no carrinho</small>{% endif %}
+            <button type="submit" class="btn primary">Adicionar</button>
           </span>
+        </div>
+      </form>
+    {% else %}
+      <div class="cd-rodape">
+        <span class="cd-preco">R$ {{ item.preco|floatformat:2 }}</span>
 
-          <button type="submit" name="delta" value="1" class="btn primary cd-add" {% if escolhido %}hidden{% endif %}>
-            Adicionar
-          </button>
-        </form>
-      {% else %}
-        <span class="tag tag-bloqueado">Esgotado</span>
-      {% endif %}
-    </div>
+        {% if disponivel %}
+          <form method="post" action="{% url 'pedidos:cardapio_adicionar' %}" class="cd-acao"
+                data-tipo="{{ tipo }}" data-pk="{{ item.pk }}">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="{{ tipo }}">
+            <input type="hidden" name="pk" value="{{ item.pk }}">
+            <input type="hidden" name="voltar" value="{{ request.path }}">
+
+            <span class="cd-stepper" {% if not escolhido %}hidden{% endif %}>
+              <button type="submit" name="delta" value="-1" class="qty-btn" aria-label="Tirar um">−</button>
+              <b class="cd-qtd">{{ escolhido|default:0 }}</b>
+              <button type="submit" name="delta" value="1" class="qty-btn" aria-label="Mais um">+</button>
+            </span>
+
+            <button type="submit" name="delta" value="1" class="btn primary cd-add" {% if escolhido %}hidden{% endif %}>
+              Adicionar
+            </button>
+          </form>
+        {% else %}
+          <span class="tag tag-bloqueado">Esgotado</span>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </article>

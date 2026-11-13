@@ -3,9 +3,13 @@ from django.db.models import Sum
 from .models import Produto
 
 def estoque_widget_data(request):
-    # Mostra só produtos ativos; ajuste se quiser
-    produtos = Produto.objects.filter(ativo=True).order_by("nome")\
-                .values("id", "nome", "estoque")
+    # Quem tem ficha técnica não guarda estoque próprio: o que conta é o
+    # insumo. Então o widget lista quem realmente ocupa prateleira.
+    produtos = list(
+        Produto.objects.filter(ativo=True, componentes__isnull=True)
+        .order_by("nome")
+        .values("id", "nome", "estoque")
+    )
 
     total_disponivel = sum(p["estoque"] for p in produtos)
     # Destaque para baixo estoque (ex.: <= 5)

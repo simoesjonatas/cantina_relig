@@ -61,6 +61,7 @@
               <span class="k-prod">
                 <b>{{ pc.combo.nome }}</b>
                 <small>{% for i in pc.combo.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+                {% for e in pc.escolhas.all %}<small class="k-escolha">{{ e.rotulo }}: <b>{{ e.produto.nome }}</b></small>{% endfor %}
               </span>
             </li>
           {% endfor %}

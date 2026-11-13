@@ -5,7 +5,7 @@
 <div class="rel-cabecalho">
   <div>
     <h1 class="rel-titulo">Produtos</h1>
-    <p class="rel-sub">O que a cantina vende, com preço e estoque.</p>
+    <p class="rel-sub">O que a cantina vende, com preço e estoque. Insumos ficam aqui também: eles não vão para o cardápio, mas é o estoque deles que manda.</p>
   </div>
   <div class="row gap8">
     <a class="btn ghost" href="{% url 'pedidos:categoria_lista' %}">Categorias</a>
@@ -21,6 +21,10 @@
   <div class="resumo-item">
     <span class="resumo-rotulo">À venda</span>
     <span class="resumo-valor">{{ resumo.ativos }}</span>
+  </div>
+  <div class="resumo-item">
+    <span class="resumo-rotulo">Insumos</span>
+    <span class="resumo-valor">{{ resumo.insumos }}</span>
   </div>
   <div class="resumo-item">
     <span class="resumo-rotulo">Sem estoque</span>
@@ -40,6 +44,7 @@
         <option value="">Todos</option>
         <option value="ativos" {% if situacao == "ativos" %}selected{% endif %}>Só à venda</option>
         <option value="inativos" {% if situacao == "inativos" %}selected{% endif %}>Só desativados</option>
+        <option value="insumos" {% if situacao == "insumos" %}selected{% endif %}>Só insumos</option>
       </select>
     </div>
   </div>
@@ -67,14 +72,27 @@
       <tbody>
         {% for p in produtos %}
           <tr {% if not p.ativo %}class="linha-inativa"{% endif %}>
-            <td class="rel-produto">{{ p.nome }}</td>
+            <td class="rel-produto">
+              {{ p.nome }}
+              {% if p.insumo %}<span class="tag tag-insumo">insumo</span>{% endif %}
+              {% if p.ficha_resumo %}<small class="rel-ficha">monta com {{ p.ficha_resumo }}</small>{% endif %}
+            </td>
             <td>{% if p.categoria %}<span class="tag">{{ p.categoria.nome }}</span>{% else %}<span class="rel-quando">—</span>{% endif %}</td>
             <td class="num">R$ {{ p.preco|floatformat:2 }}</td>
             <td class="num">
-              <span class="chip {% if not p.estoque %}zero{% endif %}">{{ p.estoque }}</span>
+              {% if p.ficha_resumo %}
+                {# montado: o estoque é o que os insumos comportam #}
+                <span class="chip {% if not p.estoque_disponivel %}zero{% endif %}"
+                      title="Calculado pela ficha técnica">{{ p.estoque_disponivel }}</span>
+                <small class="rel-quando">pela ficha</small>
+              {% else %}
+                <span class="chip {% if not p.estoque %}zero{% endif %}">{{ p.estoque }}</span>
+              {% endif %}
             </td>
             <td>
-              {% if p.ativo %}
+              {% if p.insumo %}
+                <span class="tag">Só na ficha</span>
+              {% elif p.ativo %}
                 <span class="tag tag-ok">À venda</span>
               {% else %}
                 <span class="tag">Desativado</span>

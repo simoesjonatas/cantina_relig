@@ -5,6 +5,8 @@ from decimal import Decimal
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Pedido
+from .services import registrar_escolhas
+from .utils import texto_para_escolhas
 from .views import _combos_disponiveis
 
 def pedido_novo_cliente(request):
@@ -23,11 +25,20 @@ def pedido_novo_cliente(request):
                 it.save()
 
             formset_combos.instance = pedido
-            for pc in formset_combos.save(commit=False):
-                if not pc.combo_id or not pc.quantidade:
+            for i, f in enumerate(formset_combos.forms):
+                dados = getattr(f, "cleaned_data", None) or {}
+                if not dados.get("combo") or not dados.get("quantidade") or dados.get("DELETE"):
                     continue
+                pc = f.save(commit=False)
+                pc.pedido = pedido
                 pc.preco_unitario = pc.combo.preco
                 pc.save()
+                extra = registrar_escolhas(
+                    pc, texto_para_escolhas(request.POST.get(f"combos-{i}-escolhas", ""))
+                )
+                if extra:
+                    pc.preco_unitario = pc.combo.preco + extra
+                    pc.save(update_fields=["preco_unitario"])
 
             pedido.recalcular_total()
 

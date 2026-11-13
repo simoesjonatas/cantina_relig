@@ -54,7 +54,10 @@
 
         <ul class="cx-itens">
           {% for l in p.linhas %}
-            <li><b>{{ l.qtd }}×</b> {{ l.nome }}</li>
+            <li>
+              <b>{{ l.qtd }}×</b> {{ l.nome }}
+              {% for e in l.escolhas %}<small class="linha-escolha">{{ e.rotulo }}: {{ e.produto.nome }}</small>{% endfor %}
+            </li>
           {% empty %}
             <li class="cx-sem-itens">pedido sem itens</li>
           {% endfor %}

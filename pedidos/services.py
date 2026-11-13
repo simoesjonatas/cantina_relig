@@ -1,8 +1,12 @@
 from django.db import transaction
 from django.db.models import F, Sum
 from collections import defaultdict
+from decimal import Decimal
 from django.core.exceptions import ValidationError
-from .models import Pedido, Produto, MovimentoEstoque, ComandaCozinha
+from .models import (
+    Pedido, Produto, MovimentoEstoque, ComandaCozinha,
+    PedidoComboEscolha, somar_parte,
+)
 from django.utils import timezone
 from datetime import timedelta
 
@@ -45,18 +49,50 @@ def concluir_pedido(pedido_id: int) -> Pedido:
     return pedido
 
 
+def registrar_escolhas(pedido_combo, escolhas):
+    """
+    Congela no pedido o que o cliente escolheu (“Bebida: Coca Zero”) e devolve
+    quanto isso soma ao preço do combo. Guardamos o rótulo e o adicional aqui
+    porque o combo pode mudar depois sem reescrever a venda.
+    """
+    combo = pedido_combo.combo
+    escolhas = {int(k): int(v) for k, v in (escolhas or {}).items() if v}
+    pedido_combo.escolhas.all().delete()
+
+    extra = Decimal("0.00")
+    for escolha in combo.escolhas.all():
+        opcao = escolha.opcao(escolhas.get(escolha.pk))
+        if not opcao:
+            continue
+        PedidoComboEscolha.objects.create(
+            pedido_combo=pedido_combo,
+            escolha=escolha,
+            rotulo=escolha.nome,
+            produto=opcao.produto,
+            quantidade=escolha.quantidade,
+            adicional=opcao.adicional,
+        )
+        extra += opcao.adicional * escolha.quantidade
+    return extra
+
+
 def _consumo_por_produto(pedido):
     """
-    Quanto cada produto sai neste pedido, somando itens avulsos e o conteúdo
-    dos combos. Precisa ser somado: o mesmo produto pode estar solto e dentro
-    de um combo, e conferir separado deixaria vender mais do que há no estoque.
+    Quanto cada item de estoque sai neste pedido. Dois passos importantes:
+    produto com ficha técnica vira os insumos dele (um duplo são 2 discos), e
+    o mesmo insumo pode vir de lugares diferentes — avulso, dentro de um combo
+    e ainda pela bebida escolhida. Tudo isso precisa somar antes de conferir,
+    senão daria para vender mais do que existe.
+
+    Devolve {pk: (produto, quantidade)}.
     """
-    necessidade = defaultdict(int)
+    necessidade = {}
     for item in pedido.itens.all():
-        necessidade[item.produto_id] += item.quantidade
+        for produto, quantidade in item.produto.partes():
+            somar_parte(necessidade, produto, quantidade * item.quantidade)
     for pc in pedido.combos.all():
-        for ci in pc.combo.itens.all():
-            necessidade[ci.produto_id] += ci.quantidade * pc.quantidade
+        for produto, quantidade in pc.necessidade().values():
+            somar_parte(necessidade, produto, quantidade * pc.quantidade)
     return necessidade
 
 
@@ -65,50 +101,48 @@ def confirmar_pedido(pedido_id: int) -> Pedido:
     pedido = (
         Pedido.objects.select_for_update()
         .select_related()
-        .prefetch_related("itens__produto", "combos__combo__itens__produto")
+        .prefetch_related(
+            "itens__produto__componentes__insumo",
+            "combos__combo__itens__produto__componentes__insumo",
+            "combos__escolhas__produto__componentes__insumo",
+        )
         .get(pk=pedido_id)
     )
 
     if not pedido.itens.exists() and not pedido.combos.exists():
         raise ValidationError("Pedido sem itens.")
 
-    # confere o estoque somando avulsos + combos, com os produtos travados
+    # confere o estoque já somado, com os produtos travados
     necessidade = _consumo_por_produto(pedido)
-    for produto_id, quantidade in necessidade.items():
-        produto = Produto.objects.select_for_update().get(pk=produto_id)
-        if quantidade > produto.estoque:
+    for produto_id, (produto, quantidade) in necessidade.items():
+        travado = Produto.objects.select_for_update().get(pk=produto_id)
+        if quantidade > travado.estoque:
             raise ValidationError(
-                f"Estoque insuficiente para {produto.nome}: "
-                f"solicitado {quantidade}, disponível {produto.estoque}."
+                f"Estoque insuficiente para {travado.nome}: "
+                f"solicitado {quantidade}, disponível {travado.estoque}."
             )
 
-    # baixa dos itens avulsos (guarda o vínculo com a linha do pedido)
-    for item in pedido.itens.all():
-        produto = Produto.objects.select_for_update().get(pk=item.produto_id)
-        produto.estoque = F("estoque") - item.quantidade
+    def baixar(produto_id, quantidade, item=None):
+        produto = Produto.objects.select_for_update().get(pk=produto_id)
+        produto.estoque = F("estoque") - quantidade
         produto.save(update_fields=["estoque"])
         MovimentoEstoque.objects.create(
             produto=produto,
             pedido=pedido,
             item=item,
             tipo=MovimentoEstoque.Tipo.SAIDA,
-            quantidade=item.quantidade,
+            quantidade=quantidade,
         )
 
-    # baixa do conteúdo dos combos
+    # baixa dos itens avulsos (guarda o vínculo com a linha do pedido)
+    for item in pedido.itens.all():
+        for produto, quantidade in item.produto.partes():
+            baixar(produto.pk, quantidade * item.quantidade, item=item)
+
+    # baixa do conteúdo dos combos, incluindo o que o cliente escolheu
     for pc in pedido.combos.all():
-        for ci in pc.combo.itens.all():
-            quantidade = ci.quantidade * pc.quantidade
-            produto = Produto.objects.select_for_update().get(pk=ci.produto_id)
-            produto.estoque = F("estoque") - quantidade
-            produto.save(update_fields=["estoque"])
-            MovimentoEstoque.objects.create(
-                produto=produto,
-                pedido=pedido,
-                item=None,
-                tipo=MovimentoEstoque.Tipo.SAIDA,
-                quantidade=quantidade,
-            )
+        for produto, quantidade in pc.necessidade().values():
+            baixar(produto.pk, quantidade * pc.quantidade)
 
     pedido.recalcular_total()
     pedido.status = Pedido.Status.ENVIADO_COZINHA

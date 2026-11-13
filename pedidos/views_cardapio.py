@@ -9,6 +9,8 @@ from django.views.decorators.http import require_POST
 
 from . import carrinho as cart
 from .models import Produto, Combo, Pedido, PedidoItem, PedidoCombo, Categoria
+from .services import registrar_escolhas
+from .utils import chave_combo, ler_chave_combo, escolhas_do_post
 
 
 def _pedidos_abertos(sessao):
@@ -24,10 +26,17 @@ def _pedidos_abertos(sessao):
 
 
 def cardapio(request):
-    produtos = Produto.objects.filter(ativo=True).select_related("categoria").order_by("nome")
+    # insumo (o disco de hambúrguer, por exemplo) não é vendido sozinho
+    produtos = (
+        Produto.objects.filter(ativo=True, insumo=False)
+        .select_related("categoria")
+        .prefetch_related("componentes__insumo")
+        .order_by("nome")
+    )
     combos = [
-        c for c in Combo.objects.filter(ativo=True).prefetch_related("itens__produto").order_by("nome")
-        if c.itens.exists()
+        c for c in Combo.objects.filter(ativo=True)
+        .prefetch_related(*cart.COMBO_COMPLETO).order_by("nome")
+        if c.montavel
     ]
     resumo = cart.detalhar(request.session)
     if resumo["ajustado"]:
@@ -35,12 +44,19 @@ def cardapio(request):
 
     # marca em cada item quanto já está no carrinho; o template não tem
     # como procurar numa chave de dicionário
-    no_carrinho = {(l["tipo"], l["obj"].pk): l["qtd"] for l in resumo["linhas"]}
+    no_carrinho = {(l["tipo"], l["chave"]): l["qtd"] for l in resumo["linhas"]}
     produtos = list(produtos)   # precisa materializar para marcar e para agrupar
     for p in produtos:
-        p.escolhido = no_carrinho.get(("produtos", p.pk), 0)
+        p.escolhido = no_carrinho.get(("produtos", str(p.pk)), 0)
+        p.sobra = p.estoque_disponivel
     for c in combos:
-        c.escolhido = no_carrinho.get(("combos", c.pk), 0)
+        # combo com escolha vira uma linha por combinação, então o cartão
+        # soma todas elas só para dizer quantos já foram para o carrinho
+        c.escolhido = sum(
+            qtd for (tipo, chave), qtd in no_carrinho.items()
+            if tipo == "combos" and ler_chave_combo(chave)[0] == c.pk
+        )
+        c.sobra = c.quantos_cabem
 
     # agrupa na ordem definida em Categoria; quem não tem vai para "Outros",
     # no fim, para nenhum produto sumir do cardápio
@@ -64,14 +80,37 @@ def cardapio(request):
 @require_POST
 def cardapio_adicionar(request):
     tipo = request.POST.get("tipo")
-    pk = request.POST.get("pk")
-    if tipo not in ("produtos", "combos") or not pk:
+    if tipo not in ("produtos", "combos"):
+        return redirect("pedidos:cardapio")
+
+    voltar = request.POST.get("voltar") or "pedidos:cardapio"
+
+    if tipo == "combos":
+        # a linha do carrinho é o combo + o que foi escolhido nele; o cardápio
+        # manda as escolhas, o carrinho manda a chave que já existe
+        chave = request.POST.get("chave")
+        if not chave:
+            combo_pk = request.POST.get("pk")
+            combo = Combo.objects.filter(pk=combo_pk, ativo=True).prefetch_related("escolhas").first()
+            if not combo:
+                return redirect("pedidos:cardapio")
+            escolhas = escolhas_do_post(request.POST)
+            faltando = [e.nome for e in combo.escolhas.all() if not escolhas.get(e.pk)]
+            if faltando:
+                messages.error(request, f"Antes de adicionar, escolha: {', '.join(faltando)}.")
+                return redirect(voltar)
+            chave = chave_combo(combo_pk, escolhas)
+        alvo = chave
+    else:
+        alvo = request.POST.get("pk")
+
+    if not alvo:
         return redirect("pedidos:cardapio")
 
     if request.POST.get("quantidade") not in (None, ""):
-        qtd = cart.ajustar(request.session, tipo, pk, quantidade=int(request.POST["quantidade"]))
+        qtd = cart.ajustar(request.session, tipo, alvo, quantidade=int(request.POST["quantidade"]))
     else:
-        qtd = cart.ajustar(request.session, tipo, pk, delta=int(request.POST.get("delta", 1)))
+        qtd = cart.ajustar(request.session, tipo, alvo, delta=int(request.POST.get("delta", 1)))
 
     resumo = cart.detalhar(request.session)
     if request.headers.get("X-Requested-With") == "fetch":
@@ -80,7 +119,7 @@ def cardapio_adicionar(request):
             "itens": resumo["itens"],
             "total": f'{resumo["total"]:.2f}'.replace(".", ","),
         })
-    return redirect(request.POST.get("voltar") or "pedidos:cardapio")
+    return redirect(voltar)
 
 
 def carrinho_ver(request):
@@ -126,10 +165,13 @@ def finalizar(request):
                             quantidade=l["qtd"], preco_unitario=l["unit"],
                         )
                     else:
-                        PedidoCombo.objects.create(
+                        pc = PedidoCombo.objects.create(
                             pedido=pedido, combo=l["obj"],
                             quantidade=l["qtd"], preco_unitario=l["unit"],
                         )
+                        # congela a bebida que a pessoa escolheu; o preço já
+                        # veio do carrinho com o adicional somado
+                        registrar_escolhas(pc, ler_chave_combo(l["chave"])[1])
                 pedido.recalcular_total()
             cart.esvaziar(request.session)
             cart.registrar_pedido(request.session, pedido.pk)
@@ -148,7 +190,9 @@ def meus_pedidos(request):
     ids = cart.ids_dos_pedidos(request.session)
     encontrados = {
         p.pk: p
-        for p in Pedido.objects.filter(pk__in=ids).prefetch_related("itens__produto", "combos__combo")
+        for p in Pedido.objects.filter(pk__in=ids).prefetch_related(
+            "itens__produto", "combos__combo", "combos__escolhas__produto"
+        )
     }
     pedidos = [encontrados[i] for i in ids if i in encontrados]
 

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{% if escolha %}Editar escolha{% else %}Nova escolha{% endif %} — {{ combo.nome }}{% endblock %}
+
+{% block content %}
+<a class="rel-voltar" href="{% url 'pedidos:combo_editar' combo.pk %}">← {{ combo.nome }}</a>
+
+<h1 class="rel-titulo">{% if escolha %}Editar escolha{% else %}O que o cliente escolhe{% endif %}</h1>
+<p class="rel-sub">
+  Dê um nome à pergunta (“Bebida”) e liste as opções. Quem pedir o
+  {{ combo.nome }} decide na hora, e o estoque baixa do que ele escolher.
+</p>
+
+<form method="post" class="card" id="escolhaForm">
+  {% csrf_token %}
+
+  {% for erro in form.non_field_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+
+  <div class="grid3">
+    <div class="form-group">
+      <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+      {{ form.nome }}
+      {% for erro in form.nome.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label for="{{ form.quantidade.id_for_label }}">{{ form.quantidade.label }}</label>
+      {{ form.quantidade }}
+      <small class="ajuda-campo">Quase sempre 1.</small>
+      {% for erro in form.quantidade.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label for="{{ form.ordem.id_for_label }}">{{ form.ordem.label }}</label>
+      {{ form.ordem }}
+      {% for erro in form.ordem.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+  </div>
+
+  <hr>
+
+  <h2 class="mb8">Opções</h2>
+  {% for erro in formset.non_form_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+  {{ formset.management_form }}
+
+  <div id="opcoesLinhas">
+    {% for f in formset %}
+      <div class="combo-linha item-row">
+        {{ f.id }}
+        <div class="form-group">
+          <label for="{{ f.produto.id_for_label }}">{{ f.produto.label }}</label>
+          {{ f.produto }}
+          {% for erro in f.produto.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ f.adicional.id_for_label }}">{{ f.adicional.label }}</label>
+          {{ f.adicional }}
+          {% for erro in f.adicional.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        <span class="combo-delete" hidden>{{ f.DELETE }}</span>
+        <button type="button" class="btn ghost btn-pequeno perigo opcao-remover">Remover</button>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="row gap8" style="margin-top:12px;">
+    <button type="button" class="btn ghost" id="addOpcao">+ Adicionar opção</button>
+  </div>
+
+  <hr>
+
+  <div class="row gap8">
+    <button class="btn primary" type="submit">{% if escolha %}Salvar alterações{% else %}Criar escolha{% endif %}</button>
+    <a class="btn ghost" href="{% url 'pedidos:combo_editar' combo.pk %}">Cancelar</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const linhas = document.getElementById('opcoesLinhas');
+    const total = document.querySelector('[name="opcoes-TOTAL_FORMS"]');
+
+    function ligarRemover(linha) {
+      const botao = linha.querySelector('.opcao-remover');
+      if (!botao) return;
+      botao.addEventListener('click', () => {
+        const del = linha.querySelector('.combo-delete input');
+        if (del) { del.checked = true; linha.hidden = true; }
+        else { linha.remove(); }
+      });
+    }
+
+    linhas.querySelectorAll('.combo-linha').forEach(ligarRemover);
+
+    document.getElementById('addOpcao').addEventListener('click', () => {
+      const n = parseInt(total.value, 10);
+      const nova = linhas.querySelector('.combo-linha').cloneNode(true);
+      nova.hidden = false;
+      nova.querySelectorAll('input, select, label').forEach(el => {
+        ['name', 'id', 'for'].forEach(attr => {
+          const v = el.getAttribute(attr);
+          if (v) el.setAttribute(attr, v.replace(/-\d+-/, `-${n}-`));
+        });
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        if (el.type === 'number') el.value = '';
+        if (el.type === 'checkbox') el.checked = false;
+        if (el.type === 'hidden' && /-id$/.test(el.name || '')) el.value = '';
+      });
+      nova.querySelectorAll('.campo-erro').forEach(e => e.remove());
+      linhas.appendChild(nova);
+      total.value = n + 1;
+      ligarRemover(nova);
+    });
+  })();
+</script>
+{% endblock %}

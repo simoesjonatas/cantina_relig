@@ -21,7 +21,7 @@
         </div>
 
         <div class="mp-itens">
-          {% for pc in p.combos.all %}{{ pc.quantidade }}× {{ pc.combo.nome }}{% if not forloop.last or p.itens.all %} · {% endif %}{% endfor %}
+          {% for pc in p.combos.all %}{{ pc.quantidade }}× {{ pc.combo.nome }}{% if pc.escolhas_resumo %} ({{ pc.escolhas_resumo }}){% endif %}{% if not forloop.last or p.itens.all %} · {% endif %}{% endfor %}
           {% for i in p.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}
         </div>
 

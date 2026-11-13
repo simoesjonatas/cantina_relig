@@ -45,7 +45,10 @@
     <ul>
       {% for l in resumo.linhas %}
         <li>
-          <span><b>{{ l.qtd }}×</b> {{ l.nome }}</span>
+          <span>
+            <b>{{ l.qtd }}×</b> {{ l.nome }}
+            {% for e in l.escolhas %}<small class="fin-escolha">{{ e.rotulo }}: {{ e.produto.nome }}</small>{% endfor %}
+          </span>
           <span>R$ {{ l.subtotal|floatformat:2 }}</span>
         </li>
       {% endfor %}

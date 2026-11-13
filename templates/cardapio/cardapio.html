@@ -20,7 +20,7 @@
   <h2 class="cd-secao" id="cat-combos">Combos <small>saem mais em conta</small></h2>
   <div class="cd-grade">
     {% for c in combos %}
-      {% include "cardapio/_cartao.html" with item=c tipo="combos" combo=True disponivel=c.quantos_cabem escolhido=c.escolhido %}
+      {% include "cardapio/_cartao.html" with item=c tipo="combos" combo=True disponivel=c.sobra escolhido=c.escolhido %}
     {% endfor %}
   </div>
 {% endif %}
@@ -29,7 +29,7 @@
   <h2 class="cd-secao" id="{{ s.id }}">{{ s.nome }}</h2>
   <div class="cd-grade">
     {% for p in s.itens %}
-      {% include "cardapio/_cartao.html" with item=p tipo="produtos" combo=False disponivel=p.estoque escolhido=p.escolhido %}
+      {% include "cardapio/_cartao.html" with item=p tipo="produtos" combo=False disponivel=p.sobra escolhido=p.escolhido %}
     {% endfor %}
   </div>
 {% empty %}

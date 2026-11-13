@@ -13,32 +13,111 @@
   {% endif %}
 </p>
 
-<form method="post" class="card form-produto" enctype="multipart/form-data">
+<form method="post" class="card form-produto" id="produtoForm" enctype="multipart/form-data">
   {% csrf_token %}
 
   {% for erro in form.non_field_errors %}
     <div class="flash-item error">{{ erro }}</div>
   {% endfor %}
 
-  {% for campo in form %}
-    {% if campo.name == "ativo" %}
-      <label class="checkbox-linha">
-        {{ campo }}
-        <span>
-          <b>{{ campo.label }}</b>
-          <small>Desmarcado, ele some da tela de montar pedido — mas o histórico continua.</small>
-        </span>
-      </label>
-    {% else %}
-      <div class="form-group">
-        <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
-        {{ campo }}
-        {% for erro in campo.errors %}
-          <span class="campo-erro">{{ erro }}</span>
-        {% endfor %}
-      </div>
+  <div class="form-group">
+    <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+    {{ form.nome }}
+    {% for erro in form.nome.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
+  <label class="checkbox-linha" id="linhaInsumo">
+    {{ form.insumo }}
+    <span>
+      <b>{{ form.insumo.label }}</b>
+      <small>Insumo não aparece no cardápio e não é vendido sozinho — ele só entra na
+      ficha de outros produtos (ex.: disco de hambúrguer).</small>
+    </span>
+  </label>
+
+  <div class="grid2">
+    <div class="form-group">
+      <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+      {{ form.categoria }}
+      {% for erro in form.categoria.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+    <div class="form-group" id="grupoPreco">
+      <label for="{{ form.preco.id_for_label }}">{{ form.preco.label }}</label>
+      {{ form.preco }}
+      <small class="ajuda-campo" id="ajudaPreco" hidden>Insumo não é vendido sozinho: pode deixar zerado.</small>
+      {% for erro in form.preco.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+    {{ form.descricao }}
+    {% for erro in form.descricao.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
+  <div class="form-group">
+    <label for="{{ form.foto.id_for_label }}">{{ form.foto.label }}</label>
+    {% if produto.foto %}
+      <div class="foto-atual"><img src="{{ produto.foto.url }}" alt="{{ produto.nome }}"></div>
     {% endif %}
-  {% endfor %}
+    {{ form.foto }}
+    {% for erro in form.foto.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
+  <div class="form-group" id="grupoEstoque">
+    <label for="{{ form.estoque.id_for_label }}">{{ form.estoque.label }}</label>
+    {{ form.estoque }}
+    <small class="ajuda-campo" id="ajudaEstoque" hidden>
+      Este produto é montado a partir da ficha abaixo — o estoque dele sai do que os insumos comportam.
+    </small>
+    {% for erro in form.estoque.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
+  <hr>
+
+  <h2 class="mb8">Ficha técnica <small class="rel-sub">o que sai do estoque a cada venda</small></h2>
+  <p class="rel-sub" style="margin-top:-6px;">
+    Deixe vazio se o próprio produto é o que fica na prateleira. Preencha quando ele for
+    montado: o hambúrguer duplo gasta 2 discos, o triplo gasta 3 — e os dois tiram do
+    mesmo estoque de discos.
+  </p>
+
+  {% for erro in formset.non_form_errors %}<div class="flash-item error">{{ erro }}</div>{% endfor %}
+  {{ formset.management_form }}
+
+  <div id="fichaLinhas">
+    {% for f in formset %}
+      <div class="combo-linha item-row">
+        {{ f.id }}
+        <div class="form-group">
+          <label for="{{ f.insumo.id_for_label }}">{{ f.insumo.label }}</label>
+          {{ f.insumo }}
+          {% for erro in f.insumo.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label for="{{ f.quantidade.id_for_label }}">{{ f.quantidade.label }}</label>
+          {{ f.quantidade }}
+          {% for erro in f.quantidade.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+        </div>
+        <span class="combo-delete" hidden>{{ f.DELETE }}</span>
+        <button type="button" class="btn ghost btn-pequeno perigo ficha-remover">Remover</button>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="row gap8" style="margin-top:12px;">
+    <button type="button" class="btn ghost" id="addFicha">+ Adicionar insumo</button>
+  </div>
+
+  <hr>
+
+  <label class="checkbox-linha">
+    {{ form.ativo }}
+    <span>
+      <b>{{ form.ativo.label }}</b>
+      <small>Desmarcado, ele some da tela de montar pedido — mas o histórico continua.</small>
+    </span>
+  </label>
 
   <div class="row gap8" style="margin-top:18px;">
     <button class="btn primary" type="submit">
@@ -47,4 +126,77 @@
     <a class="btn ghost" href="{% url 'pedidos:produto_lista' %}">Cancelar</a>
   </div>
 </form>
+
+<script>
+  (function () {
+    const linhas = document.getElementById('fichaLinhas');
+    const total = document.querySelector('[name="componentes-TOTAL_FORMS"]');
+    const campoInsumo = document.getElementById('{{ form.insumo.id_for_label }}');
+    const campoEstoque = document.getElementById('{{ form.estoque.id_for_label }}');
+    const campoPreco = document.getElementById('{{ form.preco.id_for_label }}');
+
+    function temFicha() {
+      return [...linhas.querySelectorAll('.combo-linha')].some(l => {
+        if (l.hidden) return false;
+        const del = l.querySelector('.combo-delete input');
+        if (del && del.checked) return false;
+        return !!l.querySelector('select').value;
+      });
+    }
+
+    // produto montado não tem estoque próprio; insumo não tem preço de venda
+    function atualizar() {
+      const montado = temFicha();
+      document.getElementById('ajudaEstoque').hidden = !montado;
+      campoEstoque.disabled = montado;
+      if (montado) campoEstoque.value = '';
+
+      const insumo = campoInsumo.checked;
+      document.getElementById('ajudaPreco').hidden = !insumo;
+      campoPreco.required = !insumo;
+    }
+
+    function ligarRemover(linha) {
+      const botao = linha.querySelector('.ficha-remover');
+      if (!botao) return;
+      botao.addEventListener('click', () => {
+        const del = linha.querySelector('.combo-delete input');
+        if (del) { del.checked = true; linha.hidden = true; }
+        else { linha.remove(); }
+        atualizar();
+      });
+    }
+
+    linhas.querySelectorAll('.combo-linha').forEach(ligarRemover);
+
+    document.getElementById('addFicha').addEventListener('click', () => {
+      const n = parseInt(total.value, 10);
+      const nova = linhas.querySelector('.combo-linha').cloneNode(true);
+      nova.hidden = false;
+      nova.querySelectorAll('input, select, label').forEach(el => {
+        ['name', 'id', 'for'].forEach(attr => {
+          const v = el.getAttribute(attr);
+          if (v) el.setAttribute(attr, v.replace(/-\d+-/, `-${n}-`));
+        });
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        if (el.type === 'number') el.value = 1;
+        if (el.type === 'checkbox') el.checked = false;
+        if (el.type === 'hidden' && /-id$/.test(el.name || '')) el.value = '';
+      });
+      nova.querySelectorAll('.campo-erro').forEach(e => e.remove());
+      linhas.appendChild(nova);
+      total.value = n + 1;
+      ligarRemover(nova);
+      atualizar();
+    });
+
+    // campo desabilitado não vai no POST; reabilita na hora de enviar
+    document.getElementById('produtoForm').addEventListener('submit', () => {
+      campoEstoque.disabled = false;
+    });
+
+    document.getElementById('produtoForm').addEventListener('change', atualizar);
+    atualizar();
+  })();
+</script>
 {% endblock %}

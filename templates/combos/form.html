@@ -25,6 +25,22 @@
     </div>
   </div>
 
+  <div class="form-group">
+    <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+    {{ form.descricao }}
+    {% for erro in form.descricao.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
+  <div class="form-group">
+    <label for="{{ form.foto.id_for_label }}">{{ form.foto.label }}</label>
+    {% if combo.foto %}
+      <div class="foto-atual"><img src="{{ combo.foto.url }}" alt="{{ combo.nome }}"></div>
+    {% endif %}
+    {{ form.foto }}
+    <small class="ajuda-campo">Aparece no cartão do combo no cardápio.</small>
+    {% for erro in form.foto.errors %}<span class="campo-erro">{{ erro }}</span>{% endfor %}
+  </div>
+
   <label class="checkbox-linha" style="margin-top:4px;">
     {{ form.ativo }}
     <span>
@@ -74,6 +90,43 @@
 
   <hr>
 
+  <h2 class="mb8">O cliente escolhe</h2>
+  <p class="rel-sub" style="margin-top:-6px;">
+    Para quando a bebida (ou o acompanhamento) fica a critério de quem pede: você
+    cadastra as opções e ele decide na hora. O estoque baixa da opção escolhida.
+  </p>
+
+  {% if combo %}
+    {% if escolhas %}
+      <ul class="escolha-lista">
+        {% for e in escolhas %}
+          <li class="escolha-item">
+            <div>
+              <b>{{ e.nome }}</b>
+              {% if e.quantidade > 1 %}<span class="tag">{{ e.quantidade }} unidades</span>{% endif %}
+              <small>{% for o in e.opcoes.all %}{{ o.produto.nome }}{% if o.adicional %} (+R$ {{ o.adicional|floatformat:2 }}){% endif %}{% if not forloop.last %} · {% endif %}{% empty %}sem opções cadastradas{% endfor %}</small>
+            </div>
+            <span class="row gap8">
+              <a class="btn ghost btn-pequeno" href="{% url 'pedidos:combo_escolha_editar' e.pk %}">Editar</a>
+              <button type="button" class="btn ghost btn-pequeno perigo escolha-excluir"
+                      data-url="{% url 'pedidos:combo_escolha_excluir' e.pk %}"
+                      data-nome="{{ e.nome }}">Remover</button>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="rel-sub">Nenhuma escolha por enquanto — tudo que vem no combo é fixo.</p>
+    {% endif %}
+    <div class="row gap8" style="margin-top:8px;">
+      <a class="btn ghost" href="{% url 'pedidos:combo_escolha_criar' combo.pk %}">+ Adicionar escolha</a>
+    </div>
+  {% else %}
+    <p class="rel-sub">Crie o combo primeiro; depois dá para cadastrar o que o cliente escolhe.</p>
+  {% endif %}
+
+  <hr>
+
   <div class="row gap8">
     <button class="btn primary" type="submit">{% if combo %}Salvar alterações{% else %}Criar combo{% endif %}</button>
     <a class="btn ghost" href="{% url 'pedidos:combo_lista' %}">Cancelar</a>
@@ -81,6 +134,7 @@
 </form>
 
 {{ precos|json_script:"precos" }}
+{{ avulso_escolhas|json_script:"avulsoEscolhas" }}
 <script>
   // --- adicionar linha, clonando a última ---
   const container = document.getElementById('itensCombo');
@@ -90,12 +144,11 @@
     return [...container.querySelectorAll('.combo-linha')].filter(l => !l.hidden);
   }
 
-  // com uma linha só, remover deixaria o combo vazio
+  // dá para tirar todos os fixos: o combo pode ser só de escolhas
   function ajustarBotoes() {
-    const restantes = visiveis();
-    restantes.forEach(l => {
+    visiveis().forEach(l => {
       const botao = l.querySelector('.combo-remover');
-      if (botao) botao.disabled = restantes.length === 1;
+      if (botao) botao.disabled = false;
     });
   }
 
@@ -139,11 +192,13 @@
 
   // --- prévia: quanto custaria avulso ---
   const precos = JSON.parse(document.getElementById('precos').textContent);
+  // o que as escolhas somam no avulso (a opção mais barata de cada uma)
+  const avulsoEscolhas = JSON.parse(document.getElementById('avulsoEscolhas').textContent) || 0;
   const previa = document.getElementById('previa');
   const campoPreco = document.getElementById('{{ form.preco.id_for_label }}');
 
   function atualizarPrevia() {
-    let avulso = 0;
+    let avulso = avulsoEscolhas;
     container.querySelectorAll('.combo-linha').forEach(linha => {
       if (linha.hidden) return;
       const del = linha.querySelector('.combo-delete input');
@@ -165,6 +220,19 @@
     else if (combo > avulso) { dif.textContent = 'atenção: o combo está ' + fmt(combo - avulso) + ' mais caro que avulso'; dif.className = 'previa-alerta'; }
     else { dif.textContent = 'mesmo preço do avulso'; dif.className = 'previa-alerta'; }
   }
+
+  // remover escolha vai por POST próprio, fora do formulário do combo
+  document.querySelectorAll('.escolha-excluir').forEach(botao => {
+    botao.addEventListener('click', () => {
+      if (!confirm(`Remover a escolha “${botao.dataset.nome}” deste combo?`)) return;
+      const f = document.createElement('form');
+      f.method = 'post';
+      f.action = botao.dataset.url;
+      f.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">';
+      document.body.appendChild(f);
+      f.submit();
+    });
+  });
 
   document.getElementById('comboForm').addEventListener('input', atualizarPrevia);
   document.getElementById('comboForm').addEventListener('change', atualizarPrevia);

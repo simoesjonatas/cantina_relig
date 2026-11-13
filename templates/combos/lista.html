@@ -69,11 +69,28 @@
         <ul class="combo-itens">
           {% for i in c.itens.all %}
             <li><b>{{ i.quantidade }}×</b> {{ i.produto.nome }}
-              <span class="combo-estoque {% if not i.produto.estoque %}zero{% endif %}">{{ i.produto.estoque }} em estoque</span>
+              <span class="combo-estoque {% if not i.produto.estoque_disponivel %}zero{% endif %}">
+                {{ i.produto.estoque_disponivel }} em estoque
+              </span>
             </li>
-          {% empty %}
-            <li class="combo-vazio">Combo sem produtos — edite para adicionar.</li>
           {% endfor %}
+          {% for e in c.escolhas.all %}
+            <li class="combo-escolha-linha">
+              <b>{{ e.quantidade }}×</b> {{ e.nome }} <small>à escolha do cliente</small>
+              <span class="combo-opcoes">
+                {% for o in e.opcoes.all %}
+                  <span class="tag {% if not o.quantos_cabem %}tag-bloqueado{% endif %}">
+                    {{ o.produto.nome }}{% if o.adicional %} +R$ {{ o.adicional|floatformat:2 }}{% endif %}
+                  </span>
+                {% empty %}
+                  <span class="combo-alerta">sem opções cadastradas</span>
+                {% endfor %}
+              </span>
+            </li>
+          {% endfor %}
+          {% if not c.itens.all and not c.escolhas.all %}
+            <li class="combo-vazio">Combo sem produtos — edite para adicionar.</li>
+          {% endif %}
         </ul>
 
         <div class="acoes combo-acoes">

@@ -30,6 +30,7 @@
             {% for pc in pedido.combos.all %}
               <li class="b-combo" title="{% for i in pc.combo.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}">
                 <b>{{ pc.quantidade }}×</b> {{ pc.combo.nome }}
+                {% for e in pc.escolhas.all %}<small class="linha-escolha">{{ e.rotulo }}: {{ e.produto.nome }}</small>{% endfor %}
               </li>
             {% endfor %}
             {% for item in pedido.itens.all %}

@@ -9,14 +9,14 @@ from .forms import PedidoForm, PedidoItemForm, PedidoItemFormSet, PedidoComboFor
 from decimal import Decimal
 from django.views.decorators.http import require_POST
 from .services import (
-    confirmar_pedido, concluir_pedido, cancelar_pedido,
+    confirmar_pedido, concluir_pedido, cancelar_pedido, registrar_escolhas,
     marcar_retirado, prontos_aguardando_retirada, JANELA_PRONTOS_MIN,
 )
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from collections import defaultdict
 from django.core.paginator import Paginator
-from .utils import querystring_sem_pagina
+from .utils import querystring_sem_pagina, texto_para_escolhas
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 
@@ -49,25 +49,55 @@ def concluir_pedido_view(request, pk):
 
 
 def _combos_disponiveis():
-    """Combos que dá para vender agora (ativos e com estoque de todos os itens)."""
-    combos = Combo.objects.filter(ativo=True).prefetch_related("itens__produto")
-    return [c for c in combos if c.itens.exists()]
+    """Combos que dá para vender agora (ativos e com algum conteúdo)."""
+    combos = Combo.objects.filter(ativo=True).prefetch_related(
+        "itens__produto__componentes__insumo",
+        "escolhas__opcoes__produto__componentes__insumo",
+    )
+    return [c for c in combos if c.montavel]
+
+
+def _partes_json(produto):
+    return [{"produto": str(p.pk), "qtd": q} for p, q in produto.partes()]
 
 
 def _dados_estoque(combos):
     """
     O que a tela precisa para avisar sobre estoque enquanto a pessoa monta o
-    pedido, em vez de só descobrir na hora de confirmar.
+    pedido, em vez de só descobrir na hora de confirmar. Manda a ficha técnica
+    junto: na conta quem pesa é o insumo (o disco), não o produto montado.
     """
-    produtos = Produto.objects.filter(ativo=True)
+    produtos = Produto.objects.prefetch_related("componentes__insumo")
     return {
         "produtos": {
             str(p.id): {"nome": p.nome, "estoque": p.estoque} for p in produtos
         },
+        "partes": {str(p.id): _partes_json(p) for p in produtos if not p.insumo},
         "combos": {
-            str(c.id): [
-                {"produto": str(i.produto_id), "qtd": i.quantidade} for i in c.itens.all()
-            ]
+            str(c.id): {
+                "fixos": [
+                    {"produto": str(pk), "qtd": qtd}
+                    for pk, (produto, qtd) in c.necessidade_fixa().items()
+                ],
+                "escolhas": [
+                    {
+                        "id": str(e.id),
+                        "nome": e.nome,
+                        "quantidade": e.quantidade,
+                        "opcoes": [
+                            {
+                                "produto": str(o.produto_id),
+                                "nome": o.produto.nome,
+                                "adicional": float(o.adicional),
+                                "partes": _partes_json(o.produto),
+                                "cabem": o.quantos_cabem,
+                            }
+                            for o in e.opcoes.all()
+                        ],
+                    }
+                    for e in c.escolhas.all()
+                ],
+            }
             for c in combos
         },
     }
@@ -105,6 +135,11 @@ def detalhe_pedido(request, pk):
 
 
 
+def _escolhas_da_linha(post, indice):
+    """O que o atendente escolheu nesse combo, vindo do campo escondido da tela."""
+    return texto_para_escolhas(post.get(f"combos-{indice}-escolhas", ""))
+
+
 @login_required
 def criar_pedido(request):
     if request.method == "POST":
@@ -112,28 +147,34 @@ def criar_pedido(request):
         formset = PedidoItemFormSet(request.POST)
         formset_combos = PedidoComboFormSet(request.POST)
         if form.is_valid() and formset.is_valid() and formset_combos.is_valid():
-            # soma avulsos e combos antes de salvar: o mesmo produto pode
-            # estar nos dois lugares, e conferir separado deixaria passar
+            # soma avulsos e combos antes de salvar, já abrindo a ficha técnica:
+            # o mesmo insumo pode estar nos dois lugares, e conferir separado
+            # deixaria passar
             consumo = defaultdict(int)
             for f in formset:
                 dados = getattr(f, "cleaned_data", None) or {}
                 if dados.get("produto") and not dados.get("DELETE"):
-                    consumo[str(dados["produto"].id)] += dados.get("quantidade") or 0
-            for f in formset_combos:
+                    pedida = dados.get("quantidade") or 0
+                    for produto, qtd in dados["produto"].partes():
+                        consumo[str(produto.pk)] += qtd * pedida
+            for i, f in enumerate(formset_combos.forms):
                 dados = getattr(f, "cleaned_data", None) or {}
                 if dados.get("combo") and dados.get("quantidade") and not dados.get("DELETE"):
-                    for ci in dados["combo"].itens.all():
-                        consumo[str(ci.produto_id)] += ci.quantidade * dados["quantidade"]
+                    vezes = dados["quantidade"]
+                    necessidade = dados["combo"].necessidade(_escolhas_da_linha(request.POST, i))
+                    for produto, qtd in necessidade.values():
+                        consumo[str(produto.pk)] += qtd * vezes
 
             faltas = _falta_estoque(consumo)
             if faltas:
                 for f in faltas:
                     messages.error(request, f"Estoque insuficiente — {f}")
+                combos_disp = _combos_disponiveis()
                 return render(request, "pedidos/criar_pedido.html", {
                     "form": form, "formset": formset, "formset_combos": formset_combos,
                     "preco_map": {p.id: float(p.preco) for p in Produto.objects.all()},
-                    "combos": _combos_disponiveis(),
-                    "estoque": _dados_estoque(_combos_disponiveis()),
+                    "combos": combos_disp,
+                    "estoque": _dados_estoque(combos_disp),
                 })
 
             pedido = form.save()
@@ -145,11 +186,18 @@ def criar_pedido(request):
             formset.save_m2m()
 
             formset_combos.instance = pedido
-            for pc in formset_combos.save(commit=False):
-                if not pc.combo_id or not pc.quantidade:
+            for i, f in enumerate(formset_combos.forms):
+                dados = getattr(f, "cleaned_data", None) or {}
+                if not dados.get("combo") or not dados.get("quantidade") or dados.get("DELETE"):
                     continue
+                pc = f.save(commit=False)
+                pc.pedido = pedido
                 pc.preco_unitario = pc.combo.preco  # congela o preço da venda
                 pc.save()
+                extra = registrar_escolhas(pc, _escolhas_da_linha(request.POST, i))
+                if extra:
+                    pc.preco_unitario = pc.combo.preco + extra
+                    pc.save(update_fields=["preco_unitario"])
 
             # 🔑 já calcula o total agora (antes mesmo de confirmar)
             pedido.recalcular_total()
@@ -213,7 +261,7 @@ def balcao_painel(request):
     prontos = (
         prontos_aguardando_retirada()
         .order_by("finalizado_em")
-        .prefetch_related("itens__produto")
+        .prefetch_related("itens__produto", "combos__combo", "combos__escolhas__produto")
     )
     return render(request, "pedidos/balcao.html", {
         "prontos": prontos,
@@ -288,7 +336,7 @@ def home(request):
 def _pendentes_qs():
     return (
         Pedido.objects.filter(status=Pedido.Status.PAGAMENTO)
-        .prefetch_related("itens__produto", "combos__combo")
+        .prefetch_related("itens__produto", "combos__combo", "combos__escolhas__produto")
         .order_by("criado_em")
     )
 

@@ -156,6 +156,23 @@
               <span class="combo-escolha-preco">R$ {{ c.preco|floatformat:2 }}</span>
             </span>
             <small>{% for i in c.itens.all %}{{ i.quantidade }}× {{ i.produto.nome }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>
+            {% if c.escolhas.all %}
+              <span class="combo-escolhas-campos">
+                {% for e in c.escolhas.all %}
+                  <label class="combo-escolha-campo">
+                    <span>{{ e.nome }}{% if e.quantidade > 1 %} ({{ e.quantidade }}×){% endif %}</span>
+                    <select class="combo-opcao" data-escolha="{{ e.pk }}">
+                      <option value="">escolha…</option>
+                      {% for o in e.opcoes.all %}
+                        <option value="{{ o.produto_id }}" {% if not o.quantos_cabem %}disabled{% endif %}>
+                          {{ o.produto.nome }}{% if o.adicional %} (+R$ {{ o.adicional|floatformat:2 }}){% endif %}{% if not o.quantos_cabem %} — esgotado{% endif %}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                {% endfor %}
+              </span>
+            {% endif %}
             {% if c.quantos_cabem %}
               {% if c.economia > 0 %}<span class="combo-economia">economiza R$ {{ c.economia|floatformat:2 }}</span>{% endif %}
             {% else %}
@@ -315,13 +332,24 @@
     if (!ocultos) return;
     const total = document.querySelector('[name="combos-TOTAL_FORMS"]');
 
+    // "3=12,4=20": escolha 3 = produto 12. Mesmo formato do carrinho.
+    function escolhasDoCartao(cartao) {
+      return [...cartao.querySelectorAll('.combo-opcao')]
+        .filter(s => s.value)
+        .map(s => `${s.dataset.escolha}=${s.value}`)
+        .join(',');
+    }
+    window.escolhasDoCartao = escolhasDoCartao;
+
     function regravar() {
       ocultos.replaceChildren();
       let n = 0;
       document.querySelectorAll('.combo-check').forEach(chk => {
         if (!chk.checked) return;
-        const qtd = chk.closest('.combo-escolha').querySelector('.combo-qtd-input').value || 1;
-        [['combo', chk.dataset.combo], ['quantidade', qtd], ['id', '']].forEach(([campo, valor]) => {
+        const cartao = chk.closest('.combo-escolha');
+        const qtd = cartao.querySelector('.combo-qtd-input').value || 1;
+        const escolhas = escolhasDoCartao(cartao);
+        [['combo', chk.dataset.combo], ['quantidade', qtd], ['escolhas', escolhas], ['id', '']].forEach(([campo, valor]) => {
           const i = document.createElement('input');
           i.type = 'hidden';
           i.name = `combos-${n}-${campo}`;
@@ -343,6 +371,14 @@
         cartao.classList.toggle('escolhido', chk.checked);
         regravar();
       });
+
+      // o label inteiro é clicável; o select dentro dele não pode
+      // marcar/desmarcar o combo sem querer
+      const campos = cartao.querySelector('.combo-escolhas-campos');
+      if (campos) {
+        campos.addEventListener('click', (e) => e.preventDefault());
+        campos.addEventListener('change', regravar);
+      }
 
       cartao.querySelectorAll('.qty-btn').forEach(b => {
         b.addEventListener('click', (e) => {
@@ -382,21 +418,48 @@
       const consumo = {};
       const porLinha = [];
 
+      // o que pesa no estoque é o insumo: um duplo são 2 discos
+      function somarPartes(produtoId, vezes) {
+        const partes = dados.partes[produtoId] || [{ produto: produtoId, qtd: 1 }];
+        partes.forEach(p => {
+          consumo[p.produto] = (consumo[p.produto] || 0) + p.qtd * vezes;
+        });
+      }
+
       linhasDeItem().forEach(linha => {
         const sel = linha.querySelector('select[name$="-produto"]');
         const qtd = linha.querySelector('input[name$="-quantidade"]');
         const id = sel && sel.value;
         const n = parseInt(qtd && qtd.value, 10) || 0;
         porLinha.push({ linha, id, n });
-        if (id && n > 0) consumo[id] = (consumo[id] || 0) + n;
+        if (id && n > 0) somarPartes(id, n);
       });
 
+      let semEscolha = 0;
       document.querySelectorAll('.combo-check:checked').forEach(chk => {
-        const vezes = parseInt(
-          chk.closest('.combo-escolha').querySelector('.combo-qtd-input').value, 10) || 0;
-        (dados.combos[chk.dataset.combo] || []).forEach(parte => {
+        const cartao = chk.closest('.combo-escolha');
+        const vezes = parseInt(cartao.querySelector('.combo-qtd-input').value, 10) || 0;
+        const combo = dados.combos[chk.dataset.combo] || { fixos: [], escolhas: [] };
+
+        (combo.fixos || []).forEach(parte => {
           consumo[parte.produto] = (consumo[parte.produto] || 0) + parte.qtd * vezes;
         });
+
+        (combo.escolhas || []).forEach(escolha => {
+          const campo = cartao.querySelector(`.combo-opcao[data-escolha="${escolha.id}"]`);
+          const escolhido = campo && campo.value;
+          if (!escolhido) { semEscolha++; return; }
+          const opcao = escolha.opcoes.find(o => o.produto === escolhido);
+          (opcao ? opcao.partes : []).forEach(parte => {
+            consumo[parte.produto] =
+              (consumo[parte.produto] || 0) + parte.qtd * escolha.quantidade * vezes;
+          });
+        });
+
+        cartao.classList.toggle('falta-escolha', !!(combo.escolhas || []).some(e => {
+          const campo = cartao.querySelector(`.combo-opcao[data-escolha="${e.id}"]`);
+          return !(campo && campo.value);
+        }));
       });
 
       // quem estourou
@@ -406,20 +469,31 @@
         if (p && pedida > p.estoque) faltando[id] = { ...p, pedida };
       });
 
-      // aviso embaixo de cada linha
+      // aviso embaixo de cada linha: fala do que realmente falta
       porLinha.forEach(({ linha, id, n }) => {
         const aviso = linha.querySelector('.est-linha');
         if (!aviso) return;
-        const p = id && dados.produtos[id];
-        if (!p) { aviso.textContent = ''; aviso.className = 'est-linha'; linha.classList.remove('sem-estoque'); return; }
+        if (!id || !dados.produtos[id]) {
+          aviso.textContent = ''; aviso.className = 'est-linha';
+          linha.classList.remove('sem-estoque');
+          return;
+        }
 
-        if (faltando[id]) {
-          aviso.textContent = `só há ${p.estoque} em estoque` +
-            (consumo[id] > n ? ` — o pedido todo está pedindo ${consumo[id]}` : '');
+        const partes = dados.partes[id] || [{ produto: id, qtd: 1 }];
+        const apertado = partes
+          .map(p => ({ ...dados.produtos[p.produto], id: p.produto, cabem: Math.floor((dados.produtos[p.produto]?.estoque || 0) / p.qtd) }))
+          .sort((a, b) => a.cabem - b.cabem)[0];
+        const estourou = partes.some(p => faltando[p.produto]);
+
+        if (estourou) {
+          const pedida = consumo[apertado.id];
+          aviso.textContent = `dá para ${apertado.cabem} — o pedido todo pede ${pedida} de ${apertado.nome}`;
           aviso.className = 'est-linha ruim';
           linha.classList.add('sem-estoque');
         } else {
-          aviso.textContent = `${p.estoque} em estoque`;
+          aviso.textContent = partes.length === 1 && partes[0].produto === id
+            ? `${apertado.estoque} em estoque`
+            : `dá para ${apertado.cabem} (${apertado.nome})`;
           aviso.className = 'est-linha';
           linha.classList.remove('sem-estoque');
         }
@@ -432,9 +506,16 @@
         li.textContent = `${f.nome}: o pedido pede ${f.pedida}, há ${f.estoque}`;
         lista.appendChild(li);
       });
-      alerta.hidden = nomes.length === 0;
+      if (semEscolha) {
+        const li = document.createElement('li');
+        li.textContent = 'Falta escolher a opção de algum combo marcado.';
+        lista.appendChild(li);
+      }
+      alerta.hidden = nomes.length === 0 && !semEscolha;
 
-      form.querySelectorAll('button[type=submit]').forEach(b => { b.disabled = nomes.length > 0; });
+      form.querySelectorAll('button[type=submit]').forEach(b => {
+        b.disabled = nomes.length > 0 || semEscolha > 0;
+      });
     }
 
     form.addEventListener('input', conferir);

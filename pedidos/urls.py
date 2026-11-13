@@ -48,6 +48,9 @@ urlpatterns = [
     path("combos/<int:pk>/editar/", views_combos.combo_editar, name="combo_editar"),
     path("combos/<int:pk>/situacao/", views_combos.combo_alternar_ativo, name="combo_alternar_ativo"),
     path("combos/<int:pk>/excluir/", views_combos.combo_excluir, name="combo_excluir"),
+    path("combos/<int:pk>/escolhas/nova/", views_combos.combo_escolha_criar, name="combo_escolha_criar"),
+    path("combos/escolhas/<int:pk>/editar/", views_combos.combo_escolha_editar, name="combo_escolha_editar"),
+    path("combos/escolhas/<int:pk>/excluir/", views_combos.combo_escolha_excluir, name="combo_escolha_excluir"),
 
     # Produtos (CRUD próprio, fora do admin)
     path("produtos/", views_produtos.produto_lista, name="produto_lista"),
